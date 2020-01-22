@@ -7,7 +7,7 @@ import {
   Text,
   Animated,
   Platform,
-  ScrollView
+  ScrollView,
 } from "react-native";
 
 import EU from "./EditorUtils";
@@ -20,13 +20,18 @@ export class Editor extends React.Component {
     initialValue: PropTypes.string,
     clearInput: PropTypes.bool,
     onChange: PropTypes.func,
+    onChangeKeyword: PropTypes.func,
     showEditor: PropTypes.bool,
     toggleEditor: PropTypes.func,
     showMentions: PropTypes.bool,
     onHideMentions: PropTypes.func,
     editorStyles: PropTypes.object,
     placeholder: PropTypes.string,
-    renderMentionList: PropTypes.func
+    renderMentionList: PropTypes.func,
+  };
+
+  static defaultProps = {
+    onChangeKeyword: () => {},
   };
 
   constructor(props) {
@@ -39,7 +44,7 @@ export class Editor extends React.Component {
       this.mentionsMap = map;
       msg = newValue;
       formattedMsg = this.formatText(newValue);
-      setTimeout(()=>{
+      setTimeout(() => {
         this.sendMessageToFooter(newValue);
       });
     }
@@ -55,13 +60,13 @@ export class Editor extends React.Component {
       trigger: "@",
       selection: {
         start: 0,
-        end: 0
+        end: 0,
       },
       menIndex: 0,
       showMentions: false,
       editorHeight: 72,
       scrollContentInset: { top: 0, bottom: 0, left: 0, right: 0 },
-      placeholder: props.placeholder || "Type something..."
+      placeholder: props.placeholder || "Type something...",
     };
     this.isTrackingStarted = false;
     this.previousChar = " ";
@@ -75,13 +80,13 @@ export class Editor extends React.Component {
       const newInputText = `${prevState.inputText}${prevState.trigger}`;
       return {
         inputText: newInputText,
-        showMentions: nextProps.showMentions
+        showMentions: nextProps.showMentions,
       };
     }
 
     if (!nextProps.showMentions) {
       return {
-        showMentions: nextProps.showMentions
+        showMentions: nextProps.showMentions,
       };
     }
     return null;
@@ -92,7 +97,7 @@ export class Editor extends React.Component {
     if (this.state.inputText !== "" && this.state.clearInput) {
       this.setState({
         inputText: "",
-        formattedText: ""
+        formattedText: "",
       });
       this.mentionsMap.clear();
     }
@@ -108,7 +113,7 @@ export class Editor extends React.Component {
       this.mentionsMap,
       selection,
       count,
-      shouldAdd
+      shouldAdd,
     );
   }
 
@@ -118,7 +123,7 @@ export class Editor extends React.Component {
     this.setState({
       keyword: "",
       menIndex,
-      isTrackingStarted: true
+      isTrackingStarted: true,
     });
   }
 
@@ -126,14 +131,15 @@ export class Editor extends React.Component {
     this.isTrackingStarted = false;
     // this.closeSuggestionsPanel();
     this.setState({
-      isTrackingStarted: false
+      isTrackingStarted: false,
     });
     this.props.onHideMentions();
   }
 
   updateSuggestions(lastKeyword) {
+    this.props.onChangeKeyword(lastKeyword);
     this.setState({
-      keyword: lastKeyword
+      keyword: lastKeyword,
     });
   }
 
@@ -154,13 +160,13 @@ export class Editor extends React.Component {
       if (this.state.triggerLocation === "new-word-only") {
         pattern = new RegExp(
           `\\B${this.state.trigger}[a-z0-9_-]+|\\B${this.state.trigger}`,
-          `gi`
+          `gi`,
         );
       } else {
         //anywhere
         pattern = new RegExp(
           `\\${this.state.trigger}[a-z0-9_-]+|\\${this.state.trigger}`,
-          `i`
+          `i`,
         );
       }
       const str = inputText.substr(this.menIndex);
@@ -225,18 +231,18 @@ export class Editor extends React.Component {
      */
     const adjMentIndexes = {
       start: initialStr.length - 1,
-      end: inputText.length - remStr.length - 1
+      end: inputText.length - remStr.length - 1,
     };
     const mentionKeys = EU.getSelectedMentionKeys(
       this.mentionsMap,
-      adjMentIndexes
+      adjMentIndexes,
     );
     mentionKeys.forEach(key => {
       remStr = `@${this.mentionsMap.get(key).username} ${remStr}`;
     });
     return {
       initialStr,
-      remStr
+      remStr,
     };
   }
 
@@ -249,7 +255,7 @@ export class Editor extends React.Component {
     const { inputText, menIndex } = this.state;
     const { initialStr, remStr } = this.getInitialAndRemainingStrings(
       inputText,
-      menIndex
+      menIndex,
     );
 
     const username = `@${user.username}`;
@@ -267,15 +273,15 @@ export class Editor extends React.Component {
     this.updateMentionsMap(
       {
         start: menEndIndex + 1,
-        end: text.length
+        end: text.length,
       },
       charAdded,
-      true
+      true,
     );
 
     this.setState({
       inputText: text,
-      formattedText: this.formatText(text)
+      formattedText: this.formatText(text),
     });
     this.stopTracking();
     this.sendMessageToFooter(text);
@@ -327,7 +333,7 @@ export class Editor extends React.Component {
       formattedText.push(initialStr);
       const formattedMention = this.formatMentionNode(
         `@${men.username}`,
-        `${start}-${men.id}-${end}`
+        `${start}-${men.id}-${end}`,
       );
       formattedText.push(formattedMention);
       if (
@@ -363,7 +369,7 @@ export class Editor extends React.Component {
   sendMessageToFooter(text) {
     this.props.onChange({
       displayText: text,
-      text: this.formatTextWithMentions(text)
+      text: this.formatTextWithMentions(text),
     });
   }
 
@@ -387,16 +393,16 @@ export class Editor extends React.Component {
       let charDeleted = Math.abs(text.length - prevText.length);
       const totalSelection = {
         start: selection.start,
-        end: charDeleted > 1 ? selection.start + charDeleted : selection.start
+        end: charDeleted > 1 ? selection.start + charDeleted : selection.start,
       };
       /**
-       * REmove all the selected mentions
+       * Remove all the selected mentions
        */
       if (totalSelection.start === totalSelection.end) {
         //single char deleting
         const key = EU.findMentionKeyInMap(
           this.mentionsMap,
-          totalSelection.start
+          totalSelection.start,
         );
         if (key && key.length) {
           this.mentionsMap.delete(key);
@@ -418,36 +424,36 @@ export class Editor extends React.Component {
         //multi-char deleted
         const mentionKeys = EU.getSelectedMentionKeys(
           this.mentionsMap,
-          totalSelection
+          totalSelection,
         );
         mentionKeys.forEach(key => {
           this.mentionsMap.delete(key);
         });
       }
       /**
-       * update indexes on charcters remove
+       * update indexes on characters remove
        * no need to worry about totalSelection End.
        * We already removed deleted mentions from the actual string.
        * */
       this.updateMentionsMap(
         {
           start: selection.end,
-          end: prevText.length
+          end: prevText.length,
         },
         charDeleted,
-        false
+        false,
       );
     } else {
-      //update indexes on new charcter add
+      //update indexes on new character add
 
       let charAdded = Math.abs(text.length - prevText.length);
       this.updateMentionsMap(
         {
           start: selection.end,
-          end: text.length
+          end: text.length,
         },
         charAdded,
-        true
+        true,
       );
       /**
        * if user type anything on the mention
@@ -456,7 +462,7 @@ export class Editor extends React.Component {
       if (selection.start === selection.end) {
         const key = EU.findMentionKeyInMap(
           this.mentionsMap,
-          selection.start - 1
+          selection.start - 1,
         );
         if (key && key.length) {
           this.mentionsMap.delete(key);
@@ -466,7 +472,7 @@ export class Editor extends React.Component {
 
     this.setState({
       inputText: text,
-      formattedText: this.formatText(text)
+      formattedText: this.formatText(text),
       // selection,
     });
     this.checkForMention(text, selection);
@@ -493,7 +499,7 @@ export class Editor extends React.Component {
       let editorHeight = 40;
       editorHeight = editorHeight + height;
       this.setState({
-        editorHeight
+        editorHeight,
       });
     }
   };
@@ -509,7 +515,7 @@ export class Editor extends React.Component {
       keyword: state.keyword,
       isTrackingStarted: state.isTrackingStarted,
       onSuggestionTap: this.onSuggestionTap.bind(this),
-      editorStyles
+      editorStyles,
     };
 
     return (
@@ -538,13 +544,13 @@ export class Editor extends React.Component {
             <View style={[{ height: this.state.editorHeight }]}>
               <View
                 style={[
-                  styles.formmatedTextWrapper,
-                  editorStyles.inputMaskTextWrapper
+                  styles.formattedTextWrapper,
+                  editorStyles.inputMaskTextWrapper,
                 ]}
               >
                 {state.formattedText !== "" ? (
                   <Text
-                    style={[styles.formmatedText, editorStyles.inputMaskText]}
+                    style={[styles.formattedText, editorStyles.inputMaskText]}
                   >
                     {state.formattedText}
                   </Text>
@@ -552,7 +558,7 @@ export class Editor extends React.Component {
                   <Text
                     style={[
                       styles.placeholderText,
-                      editorStyles.placeholderText
+                      editorStyles.placeholderText,
                     ]}
                   >
                     {state.placeholder}
@@ -560,6 +566,7 @@ export class Editor extends React.Component {
                 )}
               </View>
               <TextInput
+                {...this.props}
                 ref={input => props.onRef && props.onRef(input)}
                 style={[styles.input, editorStyles.input]}
                 multiline

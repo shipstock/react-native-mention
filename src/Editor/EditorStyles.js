@@ -7,12 +7,6 @@ export default StyleSheet.create({
     borderWidth: 1,
     width: 300
   },
-  textContainer: {
-    alignSelf: "stretch",
-    position: "relative",
-    minHeight: 40,
-    maxHeight: 140
-  },
   input: {
     fontSize: 16,
     color: "#000",
@@ -21,11 +15,10 @@ export default StyleSheet.create({
     minHeight: 40,
     position: "absolute",
     top: 0,
-    color: "transparent",
     alignSelf: "stretch",
     width: "100%"
   },
-  formmatedTextWrapper: {
+  formattedTextWrapper: {
     minHeight: 40,
     position: "absolute",
     top: 0,
@@ -33,7 +26,7 @@ export default StyleSheet.create({
     paddingVertical: 5,
     width: "100%"
   },
-  formmatedText: {
+  formattedText: {
     fontSize: 16,
     fontWeight: "400"
   },
