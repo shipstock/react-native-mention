@@ -1,11 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Text, View, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-// Styles
-import styles from "./MentionListItemStyles";
-
-import Avatar from "../Avatar";
+// Components
+import Avatar from "./Avatar";
 
 export class MentionListItem extends React.PureComponent {
   static propTypes = {
@@ -14,12 +12,12 @@ export class MentionListItem extends React.PureComponent {
     editorStyles: PropTypes.object
   };
 
-  onSuggestionTap = (user, hidePanel) => {
+  onSuggestionTap = (user) => {
     this.props.onSuggestionTap(user);
   };
 
   render() {
-    const { item: user, index, editorStyles } = this.props;
+    const { item: user, editorStyles } = this.props;
     return (
       <View>
         <TouchableOpacity
@@ -40,7 +38,7 @@ export class MentionListItem extends React.PureComponent {
             <Text
               style={[styles.username, editorStyles.mentionListItemUsername]}
             >
-              @{user.username}
+              @{user.name}
             </Text>
           </View>
         </TouchableOpacity>
@@ -48,5 +46,37 @@ export class MentionListItem extends React.PureComponent {
     );
   }
 }
+
+const styles = StyleSheet.create({
+  suggestionItem: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    width: "100%",
+    backgroundColor: "#fff",
+    color: "rgba(0, 0, 0, 0.1)",
+    height: 50,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.05)"
+  },
+  text: {
+    alignSelf: "center",
+    marginLeft: 12
+  },
+  title: {
+    fontSize: 16,
+    color: "rgba(0, 0, 0, 0.8)"
+  },
+  thumbnailWrapper: {
+    width: 35,
+    height: 35
+  },
+  thumbnailChar: {
+    fontSize: 16
+  }
+});
+
 
 export default MentionListItem;

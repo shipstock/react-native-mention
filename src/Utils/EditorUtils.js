@@ -206,7 +206,7 @@ export const EU = {
     let indexes = [];
     while ((match = reg.exec(val))) {
       indexes.push({
-        start: match.index,
+        start: match.MentionList,
         end: reg.lastIndex - 1,
         username: match[1],
         id: match[2],

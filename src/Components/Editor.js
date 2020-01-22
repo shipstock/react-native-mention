@@ -1,6 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-
 import {
   View,
   TextInput,
@@ -8,11 +7,14 @@ import {
   Animated,
   Platform,
   ScrollView,
+  StyleSheet,
 } from "react-native";
 
-import EU from "./EditorUtils";
-import styles from "./EditorStyles";
-import MentionList from "../MentionList";
+// - Project imports -
+// Components
+import MentionList from "./MentionList";
+// Utils
+import EU from "../Utils/EditorUtils";
 
 export class Editor extends React.Component {
   static propTypes = {
@@ -28,9 +30,12 @@ export class Editor extends React.Component {
     editorStyles: PropTypes.object,
     placeholder: PropTypes.string,
     renderMentionList: PropTypes.func,
+    renderMention: PropTypes.func,
+    horizontal: PropTypes.bool,
   };
 
   static defaultProps = {
+    editorStyles: {},
     onChangeKeyword: () => {},
   };
 
@@ -238,7 +243,7 @@ export class Editor extends React.Component {
       adjMentIndexes,
     );
     mentionKeys.forEach(key => {
-      remStr = `@${this.mentionsMap.get(key).username} ${remStr}`;
+      remStr = `@${this.mentionsMap.get(key).name} ${remStr}`;
     });
     return {
       initialStr,
@@ -258,13 +263,13 @@ export class Editor extends React.Component {
       menIndex,
     );
 
-    const username = `@${user.username}`;
-    const text = `${initialStr}${username} ${remStr}`;
+    const name = `@${user.name}`;
+    const text = `${initialStr}${name} ${remStr}`;
     //'@[__display__](__id__)' ///find this trigger parsing from react-mentions
 
     //set the mentions in the map.
     const menStartIndex = initialStr.length;
-    const menEndIndex = menStartIndex + (username.length - 1);
+    const menEndIndex = menStartIndex + (name.length - 1);
 
     this.mentionsMap.set([menStartIndex, menEndIndex], user);
 
@@ -332,7 +337,7 @@ export class Editor extends React.Component {
       lastIndex = end + 1;
       formattedText.push(initialStr);
       const formattedMention = this.formatMentionNode(
-        `@${men.username}`,
+        `@${men.name}`,
         `${start}-${men.id}-${end}`,
       );
       formattedText.push(formattedMention);
@@ -355,7 +360,7 @@ export class Editor extends React.Component {
         start === 1 ? "" : inputText.substring(lastIndex, start);
       lastIndex = end + 1;
       formattedText = formattedText.concat(initialStr);
-      formattedText = formattedText.concat(`@[${men.username}](id:${men.id})`);
+      formattedText = formattedText.concat(`@[${men.name}](id:${men.id})`);
       if (
         EU.isKeysAreSame(EU.getLastKeyInMap(this.mentionsMap), [start, end])
       ) {
@@ -473,10 +478,8 @@ export class Editor extends React.Component {
     this.setState({
       inputText: text,
       formattedText: this.formatText(text),
-      // selection,
     });
     this.checkForMention(text, selection);
-    // const text = `${initialStr} @[${user.username}](id:${user.id}) ${remStr}`; //'@[__display__](__id__)' ///find this trigger parsing from react-mentions
 
     this.sendMessageToFooter(text);
   };
@@ -506,7 +509,7 @@ export class Editor extends React.Component {
 
   render() {
     const { props, state } = this;
-    const { editorStyles = {} } = props;
+    const { editorStyles } = props;
 
     if (!props.showEditor) return null;
 
@@ -515,6 +518,8 @@ export class Editor extends React.Component {
       keyword: state.keyword,
       isTrackingStarted: state.isTrackingStarted,
       onSuggestionTap: this.onSuggestionTap.bind(this),
+      renderMention: props.renderMention,
+      horizontal: props.horizontal,
       editorStyles,
     };
 
@@ -529,6 +534,7 @@ export class Editor extends React.Component {
             isTrackingStarted={state.isTrackingStarted}
             onSuggestionTap={this.onSuggestionTap}
             editorStyles={editorStyles}
+            renderMention={props.renderMention}
           />
         )}
         <View style={[styles.container, editorStyles.mainContainer]}>
@@ -590,5 +596,47 @@ export class Editor extends React.Component {
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    borderColor: "green",
+    borderWidth: 1,
+    width: 300,
+  },
+  input: {
+    fontSize: 16,
+    color: "#000",
+    fontWeight: "400",
+    paddingHorizontal: 20,
+    minHeight: 40,
+    position: "absolute",
+    top: 0,
+    alignSelf: "stretch",
+    width: "100%",
+  },
+  formattedTextWrapper: {
+    minHeight: 40,
+    position: "absolute",
+    top: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    width: "100%",
+  },
+  formattedText: {
+    fontSize: 16,
+    fontWeight: "400",
+  },
+  mention: {
+    fontSize: 16,
+    fontWeight: "400",
+    backgroundColor: "rgba(36, 77, 201, 0.05)",
+    color: "#244dc9",
+  },
+  placeholderText: {
+    color: "rgba(0, 0, 0, 0.1)",
+    fontSize: 16,
+  },
+});
 
 export default Editor;
