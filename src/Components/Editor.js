@@ -535,6 +535,7 @@ export class Editor extends React.Component {
             onSuggestionTap={this.onSuggestionTap}
             editorStyles={editorStyles}
             renderMention={props.renderMention}
+            horizontal={props.horizontal}
           />
         )}
         <View style={[styles.container, editorStyles.mainContainer]}>
