@@ -5,7 +5,6 @@ import {
   TextInput,
   Text,
   Animated,
-  Platform,
   ScrollView,
   StyleSheet,
 } from "react-native";
