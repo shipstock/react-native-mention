@@ -1,13 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {
-  View,
-  TextInput,
-  Text,
-  Animated,
-  ScrollView,
-  StyleSheet,
-} from "react-native";
+import { Animated, StyleSheet, Text, TextInput, View } from "react-native";
 
 // - Project imports -
 // Components
@@ -305,12 +298,12 @@ export class Editor extends React.Component {
     // else{
     /**
      * Update cursor to not land on mention
-     * Automatically skip mentions boundry
+     * Automatically skip mentions boundary
      */
     // setTimeout(()=>{
 
     // })
-    // newSelc = EU.moveCursorToMentionBoundry(newSelc, prevSelc, this.mentionsMap, this.isTrackingStarted);
+    // newSelc = EU.moveCursorToMentionBoundary(newSelc, prevSelc, this.mentionsMap, this.isTrackingStarted);
     // }
     this.setState({ selection: newSelc });
   };
@@ -500,7 +493,7 @@ export class Editor extends React.Component {
     };
 
     return (
-      <View styles={editorStyles.mainContainer}>
+      <View>
         {props.renderMentionList ? (
           props.renderMentionList(mentionListProps)
         ) : (
@@ -514,69 +507,31 @@ export class Editor extends React.Component {
             horizontal={props.horizontal}
           />
         )}
-        <View style={[styles.container, editorStyles.mainContainer]}>
-          <ScrollView
-            ref={scroll => {
-              this.scroll = scroll;
-            }}
-            onContentSizeChange={() => {
-              this.scroll.scrollToEnd({ animated: true });
-            }}
-            style={[styles.editorContainer, editorStyles.editorContainer]}
-          >
-            <View>
-              <View
-                style={[
-                  styles.formattedTextWrapper,
-                  editorStyles.inputMaskTextWrapper,
-                ]}
-              >
-                {state.formattedText !== "" ? (
-                  <Text
-                    style={[styles.formattedText, editorStyles.inputMaskText]}
-                  >
-                    {state.formattedText}
-                  </Text>
-                ) : (
-                  <Text
-                    style={[
-                      styles.placeholderText,
-                      editorStyles.placeholderText,
-                    ]}
-                  >
-                    {state.placeholder}
-                  </Text>
-                )}
-              </View>
-              <TextInput
-                {...this.props}
-                ref={input => props.onRef && props.onRef(input)}
-                style={[styles.input, editorStyles.input]}
-                multiline
-                autoFocus
-                name={"message"}
-                value={state.inputText}
-                onBlur={props.toggleEditor}
-                onChangeText={this.onChange}
-                selection={this.state.selection}
-                onSelectionChange={this.handleSelectionChange}
-                placeholder={state.placeholder}
-                scrollEnabled={false}
-              />
-            </View>
-          </ScrollView>
+        <View style={styles.formattedTextWrapper}>
+          <Text style={[styles.formattedText, editorStyles.inputMaskText]}>
+            {state.formattedText}
+          </Text>
         </View>
+        <TextInput
+          {...this.props}
+          // Avoid placeholder insertion from props (placeholder is shown in the formattedText above).
+          ref={input => props.onRef && props.onRef(input)}
+          style={[styles.input, editorStyles.input]}
+          multiline
+          name={"message"}
+          value={state.inputText}
+          onBlur={props.toggleEditor}
+          onChangeText={this.onChange}
+          selection={this.state.selection}
+          onSelectionChange={this.handleSelectionChange}
+          scrollEnabled={false}
+        />
       </View>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#fff",
-    borderColor: "green",
-    borderWidth: 1,
-  },
   input: {
     color: "transparent",
     // Android fixes
@@ -600,9 +555,6 @@ const styles = StyleSheet.create({
   mention: {
     backgroundColor: Colors.MENTION_BACKGROUND,
     color: Colors.MENTION_TEXT,
-  },
-  placeholderText: {
-    color: Colors.PLACEHOLDER_COLOR,
   },
 });
 

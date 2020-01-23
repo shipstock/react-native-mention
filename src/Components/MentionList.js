@@ -62,8 +62,8 @@ export class MentionList extends React.PureComponent {
           {
             top:
               list.length > 0 && !props.horizontal
-                ? -(Constants.MENTION_ROW_HEIGHT * list.length)
-                : -Constants.MENTION_ROW_HEIGHT,
+                ? -(Constants.MENTION_ROW_HEIGHT * list.length) - Constants.EXTRA_MENTIONS_OFFSET
+                : -Constants.MENTION_ROW_HEIGHT - Constants.EXTRA_MENTIONS_OFFSET,
             ...styles.suggestionsPanelStyle,
           },
           this.props.editorStyles.mentionsListWrapper,
