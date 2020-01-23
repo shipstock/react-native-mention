@@ -60,10 +60,10 @@ export class MentionList extends React.PureComponent {
       <Animated.View
         style={[
           {
-            /*top:
+            top:
               list.length > 0
-                ? Constants.MENTION_ROW_HEIGHT * list.length
-                : Constants.MENTION_ROW_HEIGHT,*/
+                ? -(Constants.MENTION_ROW_HEIGHT * list.length)
+                : -Constants.MENTION_ROW_HEIGHT,
             ...styles.suggestionsPanelStyle,
           },
           this.props.editorStyles.mentionsListWrapper,
@@ -91,16 +91,19 @@ export class MentionList extends React.PureComponent {
 
 const styles = StyleSheet.create({
   suggestionsPanelStyle: {
-    /*
     position: "absolute",
     zIndex: 1,
     backgroundColor: Colors.WHITE,
     borderRadius: 5,
     borderWidth: 1,
     borderColor: Colors.MATERIAL_DIVIDER,
-    */
   },
-  loaderContainer: {},
+  loaderContainer: {
+    height: Constants.MENTION_ROW_HEIGHT,
+    width: Constants.MENTION_ROW_HEIGHT,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
 export default MentionList;
