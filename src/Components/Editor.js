@@ -607,9 +607,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   input: {
-    fontSize: 14,
-    color: Colors.BLACK,
-    paddingHorizontal: 20,
     minHeight: 40,
     position: "absolute",
     top: 0,
@@ -620,23 +617,18 @@ const styles = StyleSheet.create({
     minHeight: 40,
     position: "absolute",
     top: 0,
-    paddingHorizontal: 20,
     paddingVertical: 5,
     width: "100%",
   },
   formattedText: {
-    fontSize: 16,
-    fontWeight: "400",
+    color: Colors.MATERIAL_PRIMARY_TEXT,
   },
   mention: {
-    fontSize: 16,
-    fontWeight: "400",
-    backgroundColor: "rgba(36, 77, 201, 0.05)",
-    color: "#244dc9",
+    backgroundColor: Colors.MENTION_BACKGROUND,
+    color: Colors.MENTION_TEXT,
   },
   placeholderText: {
-    color: "rgba(0, 0, 0, 0.1)",
-    fontSize: 16,
+    color: Colors.PLACEHOLDER_COLOR,
   },
 });
 
