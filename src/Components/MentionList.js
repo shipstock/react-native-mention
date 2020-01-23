@@ -1,6 +1,12 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { ActivityIndicator, FlatList, Animated, View, StyleSheet } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Animated,
+  View,
+  StyleSheet,
+} from "react-native";
 
 // - Project imports -
 // Components
@@ -32,7 +38,7 @@ export class MentionList extends React.PureComponent {
 
   renderSuggestionsRow = ({ item, index }) => {
     return this.props.renderMention ? (
-      this.props.renderMention({item, index}, this.props.onSuggestionTap)
+      this.props.renderMention({ item, index }, this.props.onSuggestionTap)
     ) : (
       <MentionListItem
         onSuggestionTap={this.props.onSuggestionTap}
@@ -44,25 +50,26 @@ export class MentionList extends React.PureComponent {
   render() {
     const { props } = this;
 
-    const { keyword, isTrackingStarted } = props;
-    const withoutAtKeyword = keyword.substr(1, keyword.length);
+    const { isTrackingStarted } = props;
     const list = this.props.list;
-    const suggestions =
-      withoutAtKeyword !== ""
-        ? list.filter(user => user.name.includes(withoutAtKeyword))
-        : list;
+
     if (!isTrackingStarted) {
       return null;
     }
     return (
       <Animated.View
         style={[
-          { ...styles.suggestionsPanelStyle },
+          {
+            /*top:
+              list.length > 0
+                ? Constants.MENTION_ROW_HEIGHT * list.length
+                : Constants.MENTION_ROW_HEIGHT,*/
+            ...styles.suggestionsPanelStyle,
+          },
           this.props.editorStyles.mentionsListWrapper,
         ]}
       >
         <FlatList
-          style={styles.mentionsListContainer}
           keyboardShouldPersistTaps={"always"}
           horizontal={props.horizontal}
           ListEmptyComponent={
@@ -71,7 +78,7 @@ export class MentionList extends React.PureComponent {
             </View>
           }
           enableEmptySections={true}
-          data={suggestions}
+          data={list}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={rowData => {
             return this.renderSuggestionsRow(rowData);
@@ -83,15 +90,10 @@ export class MentionList extends React.PureComponent {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // flex:1,
-    maxHeight: 300,
-  },
   suggestionsPanelStyle: {
     /*
     position: "absolute",
     zIndex: 1,
-    top: -Constants.MENTION_ROW_HEIGHT,
     backgroundColor: Colors.WHITE,
     borderRadius: 5,
     borderWidth: 1,
@@ -99,10 +101,6 @@ const styles = StyleSheet.create({
     */
   },
   loaderContainer: {},
-  mentionsListContainer: {
-    height: 100,
-  },
 });
-
 
 export default MentionList;
