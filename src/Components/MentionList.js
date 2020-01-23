@@ -61,7 +61,7 @@ export class MentionList extends React.PureComponent {
         style={[
           {
             top:
-              list.length > 0
+              list.length > 0 && !props.horizontal
                 ? -(Constants.MENTION_ROW_HEIGHT * list.length)
                 : -Constants.MENTION_ROW_HEIGHT,
             ...styles.suggestionsPanelStyle,
