@@ -13,6 +13,8 @@ import {
 // - Project imports -
 // Components
 import MentionList from "./MentionList";
+// Styling
+import * as Colors from "./../Constants/Colors";
 // Utils
 import EU from "../Utils/EditorUtils";
 
@@ -603,12 +605,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderColor: "green",
     borderWidth: 1,
-    width: 300,
   },
   input: {
-    fontSize: 16,
-    color: "#000",
-    fontWeight: "400",
+    fontSize: 14,
+    color: Colors.BLACK,
     paddingHorizontal: 20,
     minHeight: 40,
     position: "absolute",
