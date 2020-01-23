@@ -71,8 +71,6 @@ export class Editor extends React.Component {
       },
       menIndex: 0,
       showMentions: false,
-      editorHeight: 72,
-      scrollContentInset: { top: 0, bottom: 0, left: 0, right: 0 },
       placeholder: props.placeholder || "Type something...",
     };
     this.isTrackingStarted = false;
@@ -486,29 +484,6 @@ export class Editor extends React.Component {
     this.sendMessageToFooter(text);
   };
 
-  onContentSizeChange = evt => {
-    /**
-     * this function will dynamically
-     * calculate editor height w.r.t
-     * the size of text in the input.
-     */
-    if (evt) {
-      // const iosTextHeight = 20.5
-      const androidTextHeight = 20.5;
-      // const textHeight = Platform.OS === 'ios' ? iosTextHeight : androidTextHeight
-
-      const height =
-        Platform.OS === "ios"
-          ? evt.nativeEvent.contentSize.height
-          : evt.nativeEvent.contentSize.height - androidTextHeight;
-      let editorHeight = 40;
-      editorHeight = editorHeight + height;
-      this.setState({
-        editorHeight,
-      });
-    }
-  };
-
   render() {
     const { props, state } = this;
     const { editorStyles } = props;
@@ -550,7 +525,7 @@ export class Editor extends React.Component {
             }}
             style={[styles.editorContainer, editorStyles.editorContainer]}
           >
-            <View style={[{ height: this.state.editorHeight }]}>
+            <View>
               <View
                 style={[
                   styles.formattedTextWrapper,
@@ -580,16 +555,13 @@ export class Editor extends React.Component {
                 style={[styles.input, editorStyles.input]}
                 multiline
                 autoFocus
-                numberOfLines={100}
                 name={"message"}
                 value={state.inputText}
                 onBlur={props.toggleEditor}
                 onChangeText={this.onChange}
                 selection={this.state.selection}
-                selectionColor={"#000"}
                 onSelectionChange={this.handleSelectionChange}
                 placeholder={state.placeholder}
-                onContentSizeChange={this.onContentSizeChange}
                 scrollEnabled={false}
               />
             </View>
@@ -607,18 +579,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   input: {
-    minHeight: 40,
-    position: "absolute",
-    top: 0,
-    alignSelf: "stretch",
-    width: "100%",
+    color: "transparent",
+    // Android fixes
+    padding: 0,
+    margin: 0,
+    // Padding to look decent with multiple lines
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   formattedTextWrapper: {
-    minHeight: 40,
     position: "absolute",
     top: 0,
-    paddingVertical: 5,
-    width: "100%",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingVertical: 4,
   },
   formattedText: {
     color: Colors.MATERIAL_PRIMARY_TEXT,
