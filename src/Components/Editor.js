@@ -511,7 +511,6 @@ export class Editor extends React.Component {
         </View>
         <TextInput
           {...this.props}
-          // Avoid placeholder insertion from props (placeholder is shown in the formattedText above).
           ref={input => props.onRef && props.onRef(input)}
           style={[styles.input, editorStyles.input]}
           multiline
