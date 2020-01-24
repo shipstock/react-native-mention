@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Animated, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 // - Project imports -
 // Components
@@ -52,9 +52,7 @@ export class Editor extends React.Component {
       inputText: msg,
       formattedText: formattedMsg,
       keyword: "",
-      textInputHeight: "",
       isTrackingStarted: false,
-      suggestionRowHeight: new Animated.Value(0),
       triggerLocation: "anywhere", //'new-words-only', //anywhere
       trigger: "@",
       selection: {
@@ -143,7 +141,6 @@ export class Editor extends React.Component {
   resetTextbox() {
     this.previousChar = " ";
     this.stopTracking();
-    this.setState({ textInputHeight: this.props.textInputMinHeight });
   }
 
   identifyKeyword(inputText) {

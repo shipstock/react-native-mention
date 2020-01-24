@@ -2,8 +2,8 @@ import React from "react";
 import PropTypes from "prop-types";
 import {
   ActivityIndicator,
-  FlatList,
   Animated,
+  FlatList,
   View,
   StyleSheet,
 } from "react-native";
