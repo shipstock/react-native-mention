@@ -17,18 +17,19 @@ import * as Colors from "../Constants/Colors";
 
 export class MentionList extends React.PureComponent {
   static propTypes = {
-    list: PropTypes.array,
     editorStyles: PropTypes.object,
+    fetching: PropTypes.bool,
     horizontal: PropTypes.bool,
     isTrackingStarted: PropTypes.bool,
-    suggestions: PropTypes.array,
     keyword: PropTypes.string,
+    list: PropTypes.array,
     onSuggestionTap: PropTypes.func,
     renderMention: PropTypes.func,
   };
 
   static defaultProps = {
     horizontal: false,
+    fetching: false,
   };
 
   constructor(props) {
@@ -49,43 +50,47 @@ export class MentionList extends React.PureComponent {
   };
   render() {
     const { props } = this;
+    let content = null;
+    const { fetching, list, show } = props;
 
-    const { isTrackingStarted } = props;
-    const list = this.props.list;
-
-    if (!isTrackingStarted) {
-      return null;
+    if (show) {
+      content = (
+        <Animated.View
+          style={[
+            {
+              top:
+                list.length > 0 && !props.horizontal
+                  ? -(Constants.MENTION_ROW_HEIGHT * list.length) -
+                    Constants.EXTRA_MENTIONS_OFFSET
+                  : -Constants.MENTION_ROW_HEIGHT -
+                    Constants.EXTRA_MENTIONS_OFFSET,
+              ...styles.suggestionsPanelStyle,
+            },
+            this.props.editorStyles.mentionsListWrapper,
+          ]}
+        >
+          <FlatList
+            keyboardShouldPersistTaps={"always"}
+            horizontal={props.horizontal}
+            ListEmptyComponent={
+              fetching ? (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator />
+                </View>
+              ) : null
+            }
+            enableEmptySections={true}
+            data={list}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            renderItem={rowData => {
+              return this.renderSuggestionsRow(rowData);
+            }}
+          />
+        </Animated.View>
+      );
     }
-    return (
-      <Animated.View
-        style={[
-          {
-            top:
-              list.length > 0 && !props.horizontal
-                ? -(Constants.MENTION_ROW_HEIGHT * list.length) - Constants.EXTRA_MENTIONS_OFFSET
-                : -Constants.MENTION_ROW_HEIGHT - Constants.EXTRA_MENTIONS_OFFSET,
-            ...styles.suggestionsPanelStyle,
-          },
-          this.props.editorStyles.mentionsListWrapper,
-        ]}
-      >
-        <FlatList
-          keyboardShouldPersistTaps={"always"}
-          horizontal={props.horizontal}
-          ListEmptyComponent={
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator />
-            </View>
-          }
-          enableEmptySections={true}
-          data={list}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          renderItem={rowData => {
-            return this.renderSuggestionsRow(rowData);
-          }}
-        />
-      </Animated.View>
-    );
+
+    return content;
   }
 }
 
@@ -103,6 +108,16 @@ const styles = StyleSheet.create({
     width: Constants.MENTION_ROW_HEIGHT,
     justifyContent: "center",
     alignItems: "center",
+  },
+  noContentContainer: {
+    height: Constants.MENTION_ROW_HEIGHT,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noContentText: {
+    fontSize: 12,
+    color: Colors.MATERIAL_SECONDARY_TEXT,
   },
 });
 

@@ -15,6 +15,7 @@ export class Editor extends React.Component {
     list: PropTypes.array,
     initialValue: PropTypes.string,
     clearInput: PropTypes.bool,
+    fetchingMentions: PropTypes.bool,
     onChange: PropTypes.func,
     onChangeKeyword: PropTypes.func,
     showEditor: PropTypes.bool,
@@ -31,6 +32,7 @@ export class Editor extends React.Component {
   static defaultProps = {
     editorStyles: {},
     onChangeKeyword: () => {},
+    fetchingMentions: false,
   };
 
   constructor(props) {
@@ -131,13 +133,6 @@ export class Editor extends React.Component {
     this.props.onHideMentions();
   }
 
-  updateSuggestions(lastKeyword) {
-    this.props.onChangeKeyword(lastKeyword);
-    this.setState({
-      keyword: lastKeyword,
-    });
-  }
-
   resetTextbox() {
     this.previousChar = " ";
     this.stopTracking();
@@ -167,7 +162,10 @@ export class Editor extends React.Component {
       const keywordArray = str.match(pattern);
       if (keywordArray && !!keywordArray.length) {
         const lastKeyword = keywordArray[keywordArray.length - 1];
-        this.updateSuggestions(lastKeyword);
+        this.props.onChangeKeyword(lastKeyword);
+        this.setState({
+          keyword: lastKeyword,
+        });
       }
     }
   }
@@ -480,13 +478,15 @@ export class Editor extends React.Component {
     if (!props.showEditor) return null;
 
     const mentionListProps = {
-      list: props.list,
-      keyword: state.keyword,
-      isTrackingStarted: state.isTrackingStarted,
-      onSuggestionTap: this.onSuggestionTap.bind(this),
-      renderMention: props.renderMention,
-      horizontal: props.horizontal,
       editorStyles,
+      fetching: props.fetchingMentions,
+      horizontal: props.horizontal,
+      keyword: state.keyword,
+      list: props.list,
+      onSuggestionTap: this.onSuggestionTap,
+      renderMention: props.renderMention,
+      // > 1 is used to ignore the trigger symbol.
+      show: state.isTrackingStarted && this.state.keyword.length > 1,
     };
 
     return (
@@ -494,15 +494,7 @@ export class Editor extends React.Component {
         {props.renderMentionList ? (
           props.renderMentionList(mentionListProps)
         ) : (
-          <MentionList
-            list={props.list}
-            keyword={state.keyword}
-            isTrackingStarted={state.isTrackingStarted}
-            onSuggestionTap={this.onSuggestionTap}
-            editorStyles={editorStyles}
-            renderMention={props.renderMention}
-            horizontal={props.horizontal}
-          />
+          <MentionList {...mentionListProps} />
         )}
         <View style={styles.formattedTextWrapper}>
           <Text style={[styles.formattedText, editorStyles.inputMaskText]}>

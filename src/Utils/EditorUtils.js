@@ -5,7 +5,7 @@
 
 export const displayTextWithMentions = (inputText, formatMentionNode) => {
   /**
-   * Use this function to parse mentions markup @[username](id) in the string value.
+   * Use this function to parse mentions markup @[name](id) in the string value.
    */
   if (inputText === "") return null;
   const retLines = inputText.split("\n");
@@ -19,7 +19,7 @@ export const displayTextWithMentions = (inputText, formatMentionNode) => {
         lastIndex = men.end + 1;
         formattedText.push(initialStr);
         const formattedMention = formatMentionNode(
-          `@${men.username}`,
+          `@${men.name}`,
           `${index}-${men.id}-${rowIndex}`
         );
         formattedText.push(formattedMention);
@@ -166,12 +166,12 @@ export const EU = {
         let endIndexDiff = 0;
         mentions.forEach((men, index) => {
           newValue = newValue.concat(retLine.substring(lastIndex, men.start));
-          const username = `@${men.username}`;
-          newValue = newValue.concat(username);
-          const menEndIndex = men.start + (username.length - 1);
+          const name = `@${men.name}`;
+          newValue = newValue.concat(name);
+          const menEndIndex = men.start + (name.length - 1);
           map.set([men.start - endIndexDiff, menEndIndex - endIndexDiff], {
             id: men.id,
-            username: men.username
+            name: men.name
           });
           //indexes diff with the new formatted string.
           endIndexDiff = endIndexDiff + Math.abs(men.end - menEndIndex);
@@ -208,7 +208,7 @@ export const EU = {
       indexes.push({
         start: match.MentionList,
         end: reg.lastIndex - 1,
-        username: match[1],
+        name: match[1],
         id: match[2],
         type: EU.specialTagsEnum.mention
       });
