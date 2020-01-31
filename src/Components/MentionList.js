@@ -109,16 +109,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  noContentContainer: {
-    height: Constants.MENTION_ROW_HEIGHT,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noContentText: {
-    fontSize: 12,
-    color: Colors.MATERIAL_SECONDARY_TEXT,
-  },
 });
 
 export default MentionList;
