@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
 
 // - Project imports -
 // Components
@@ -14,7 +14,7 @@ export class Editor extends React.Component {
   static propTypes = {
     list: PropTypes.array,
     initialValue: PropTypes.string,
-    clearInput: PropTypes.bool,
+    clearInput: PropTypes.any,
     fetchingMentions: PropTypes.bool,
     onChange: PropTypes.func,
     onChangeKeyword: PropTypes.func,
@@ -33,6 +33,7 @@ export class Editor extends React.Component {
     editorStyles: {},
     onChangeKeyword: () => {},
     fetchingMentions: false,
+    showEditor: true,
   };
 
   constructor(props) {
@@ -50,7 +51,6 @@ export class Editor extends React.Component {
       });
     }
     this.state = {
-      clearInput: props.clearInput,
       inputText: msg,
       formattedText: formattedMsg,
       keyword: "",
@@ -69,10 +69,6 @@ export class Editor extends React.Component {
     this.previousChar = " ";
   }
   static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.clearInput !== prevState.clearInput) {
-      return { clearInput: nextProps.clearInput };
-    }
-
     if (nextProps.showMentions && !prevState.showMentions) {
       const newInputText = `${prevState.inputText}${prevState.trigger}`;
       return {
@@ -90,13 +86,20 @@ export class Editor extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // only update chart if the data has changed
-    if (this.state.inputText !== "" && this.state.clearInput) {
+    // Clear input when passing different 'clearInput' value.
+    if (
+      this.state.inputText !== "" &&
+      prevProps.clearInput !== this.props.clearInput
+    ) {
       this.setState({
         inputText: "",
         formattedText: "",
       });
       this.mentionsMap.clear();
+      this.props.onChange({
+        displayText: "",
+        text: "",
+      });
     }
 
     if (EU.whenTrue(this.props, prevProps, "showMentions")) {
@@ -197,7 +200,7 @@ export class Editor extends React.Component {
      * this function extract the initialStr and remainingStr
      * at the point of new Mention string.
      * Also updates the remaining string if there
-     * are any adjcent mentions text with the new one.
+     * are any adjacent mentions text with the new one.
      */
     // const {inputText, menIndex} = this.state;
     let initialStr = inputText.substr(0, menIndex).trim();
@@ -205,7 +208,7 @@ export class Editor extends React.Component {
       initialStr = initialStr + " ";
     }
     /**
-     * remove the characters adjcent with @ sign
+     * remove the characters adjacent with @ sign
      * and extract the remaining part
      */
     let remStr =
@@ -215,9 +218,9 @@ export class Editor extends React.Component {
         .split("\x01")[1] || "";
 
     /**
-     * check if there are any adjecent mentions
+     * check if there are any adjacent mentions
      * subtracted in current selection.
-     * add the adjcent mentions
+     * add the adjacent mentions
      * @tim@nic
      * add nic back
      */
@@ -502,6 +505,8 @@ export class Editor extends React.Component {
           </Text>
         </View>
         <TextInput
+          blurOnSubmit={Platform.OS === "android"}
+          autoGrow={true}
           {...this.props}
           ref={input => props.onRef && props.onRef(input)}
           style={[styles.input, editorStyles.input]}
