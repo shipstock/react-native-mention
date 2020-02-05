@@ -218,7 +218,7 @@ export const EU = {
   /**
    * Get text + list of mentions from text containing mentions.
    * @param data (data containing the text with mentions and the displayValue).
-   * @returns object of found mentions
+   * @returns object of text (displayText) and found mentions
    */
   getTextAndMentions: data => {
     const mentions = EU.findMentions(data.text);
