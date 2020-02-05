@@ -34,6 +34,7 @@ export class Editor extends React.Component {
     onChangeKeyword: () => {},
     fetchingMentions: false,
     showEditor: true,
+    placeholder: "Type something, @mentions"
   };
 
   constructor(props) {
@@ -63,7 +64,6 @@ export class Editor extends React.Component {
       },
       menIndex: 0,
       showMentions: false,
-      placeholder: props.placeholder || "Type something...",
     };
     this.isTrackingStarted = false;
     this.previousChar = " ";
