@@ -47,7 +47,7 @@ class ChatScreen extends Component {
      * this callback will be called whenever input value change and will have
      * formatted value for mentioned syntax
      * @message : {text: 'Hey @(mrazadar)(id:1) this is good work.', displayText: `Hey @mrazadar this is good work`}
-     * */
+     */
 
     this.setState({
       message,

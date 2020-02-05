@@ -5,7 +5,7 @@
 
 export const displayTextWithMentions = (inputText, formatMentionNode) => {
   /**
-   * Use this function to parse mentions markup @[username](id) in the string value.
+   * Use this function to parse mentions markup @[name](id) in the string value.
    */
   if (inputText === "") return null;
   const retLines = inputText.split("\n");
@@ -19,8 +19,8 @@ export const displayTextWithMentions = (inputText, formatMentionNode) => {
         lastIndex = men.end + 1;
         formattedText.push(initialStr);
         const formattedMention = formatMentionNode(
-          `@${men.username}`,
-          `${index}-${men.id}-${rowIndex}`
+          `@${men.name}`,
+          `${index}-${men.id}-${rowIndex}`,
         );
         formattedText.push(formattedMention);
         if (mentions.length - 1 === index) {
@@ -41,7 +41,7 @@ export const EU = {
     mention: "mention",
     strong: "strong",
     italic: "italic",
-    underline: "underline"
+    underline: "underline",
   },
   isKeysAreSame: (src, dest) => src.toString() === dest.toString(),
   getLastItemInMap: map => Array.from(map)[map.size - 1],
@@ -66,7 +66,7 @@ export const EU = {
     // selection [3, 6]
     const mantionKeys = [...map.keys()];
     const keys = mantionKeys.filter(
-      ([a, b]) => EU.between(a, start, end) || EU.between(b, start, end)
+      ([a, b]) => EU.between(a, start, end) || EU.between(b, start, end),
     );
     return keys;
   },
@@ -113,7 +113,7 @@ export const EU = {
     selection,
     prevSelc,
     mentions,
-    isTrackingStarted
+    isTrackingStarted,
   ) => {
     /**
      * Both Mentions and Selections are 0-th index based in the strings
@@ -166,12 +166,12 @@ export const EU = {
         let endIndexDiff = 0;
         mentions.forEach((men, index) => {
           newValue = newValue.concat(retLine.substring(lastIndex, men.start));
-          const username = `@${men.username}`;
-          newValue = newValue.concat(username);
-          const menEndIndex = men.start + (username.length - 1);
+          const name = `@${men.name}`;
+          newValue = newValue.concat(name);
+          const menEndIndex = men.start + (name.length - 1);
           map.set([men.start - endIndexDiff, menEndIndex - endIndexDiff], {
             id: men.id,
-            username: men.username
+            name: men.name,
           });
           //indexes diff with the new formatted string.
           endIndexDiff = endIndexDiff + Math.abs(men.end - menEndIndex);
@@ -191,7 +191,7 @@ export const EU = {
     });
     return {
       map,
-      newValue
+      newValue,
     };
   },
   findMentions: val => {
@@ -206,14 +206,31 @@ export const EU = {
     let indexes = [];
     while ((match = reg.exec(val))) {
       indexes.push({
-        start: match.index,
+        start: match.MentionList,
         end: reg.lastIndex - 1,
-        username: match[1],
+        name: match[1],
         id: match[2],
-        type: EU.specialTagsEnum.mention
+        type: EU.specialTagsEnum.mention,
       });
     }
     return indexes;
+  },
+  /**
+   * Get text + list of mentions from text containing mentions.
+   * @param data (data containing the text with mentions and the displayValue).
+   * @returns object of text (displayText) and found mentions
+   */
+  getTextAndMentions: data => {
+    const mentions = EU.findMentions(data.text);
+    const mentionsObject = {};
+    mentions.forEach(m => {
+      mentionsObject[m.name] = m.id;
+    });
+
+    return {
+      text: data.displayText,
+      mentions: mentionsObject,
+    };
   },
   whenTrue: (next, current, key) => {
     /**
@@ -229,7 +246,7 @@ export const EU = {
      */
     return next[key] && next[key] !== current[key];
   },
-  displayTextWithMentions: displayTextWithMentions
+  displayTextWithMentions: displayTextWithMentions,
 };
 
 export default EU;
