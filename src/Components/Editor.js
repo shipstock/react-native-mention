@@ -34,7 +34,12 @@ export class Editor extends React.Component {
     onChangeKeyword: () => {},
     fetchingMentions: false,
     showEditor: true,
-    placeholder: "Type something, @mentions"
+    placeholder: "Type something, @mentions",
+  };
+
+  selection = {
+    end: 0,
+    start: 0,
   };
 
   constructor(props) {
@@ -58,10 +63,7 @@ export class Editor extends React.Component {
       isTrackingStarted: false,
       triggerLocation: "anywhere", //'new-words-only', //anywhere
       trigger: "@",
-      selection: {
-        start: 0,
-        end: 0,
-      },
+      selection: undefined,
       menIndex: 0,
       showMentions: false,
     };
@@ -283,27 +285,32 @@ export class Editor extends React.Component {
   };
 
   handleSelectionChange = ({ nativeEvent: { selection } }) => {
-    const prevSelc = this.state.selection;
-    let newSelc = { ...selection };
-    if (newSelc.start !== newSelc.end) {
-      /**
-       * if user make or remove selection
-       * Automatically add or remove mentions
-       * in the selection.
-       */
-      newSelc = EU.addMenInSelection(newSelc, prevSelc, this.mentionsMap);
+    const prevSelection = this.selection;
+    let newSelection = selection;
+    if (
+      selection.start !== selection.end &&
+      (selection.start !== prevSelection.start ||
+        selection.end !== prevSelection.end)
+    ) {
+      // If selection changes automatically add or remove mentions to selection.
+      newSelection = EU.addMenInSelection(
+        newSelection,
+        prevSelection,
+        this.mentionsMap,
+      );
     }
-    // else{
-    /**
-     * Update cursor to not land on mention
-     * Automatically skip mentions boundary
-     */
-    // setTimeout(()=>{
+    this.selection = { ...newSelection };
 
-    // })
-    // newSelc = EU.moveCursorToMentionBoundary(newSelc, prevSelc, this.mentionsMap, this.isTrackingStarted);
-    // }
-    this.setState({ selection: newSelc });
+    this.setState(
+      {
+        selection: newSelection,
+      },
+      () => {
+        this.setState({
+          selection: undefined,
+        });
+      },
+    );
   };
 
   formatMentionNode = (txt, key) => (
@@ -314,9 +321,7 @@ export class Editor extends React.Component {
 
   formatText(inputText) {
     /**
-     * Format the Mentions
-     * and display them with
-     * the different styles
+     * Format the Mentions and display them with the different styles.
      */
     if (inputText === "" || !this.mentionsMap.size) return inputText;
     const formattedText = [];
@@ -371,20 +376,16 @@ export class Editor extends React.Component {
   onChange = (inputText, fromAtBtn) => {
     let text = inputText;
     const prevText = this.state.inputText;
-    let selection = { ...this.state.selection };
+    const selection = this.selection;
     if (fromAtBtn) {
-      //update selection but don't set in state
-      //it will be auto set by input
+      // Update selection but don't set in state it will be auto set by input.
       selection.start = selection.start + 1;
       selection.end = selection.end + 1;
     }
     if (text.length < prevText.length) {
       /**
-       * if user is back pressing and it
-       * deletes the mention remove it from
-       * actual string.
+       * If user is back pressing and it deletes the mention remove it from string.
        */
-
       let charDeleted = Math.abs(text.length - prevText.length);
       const totalSelection = {
         start: selection.start,
@@ -394,7 +395,7 @@ export class Editor extends React.Component {
        * Remove all the selected mentions
        */
       if (totalSelection.start === totalSelection.end) {
-        //single char deleting
+        // Single char deleting.
         const key = EU.findMentionKeyInMap(
           this.mentionsMap,
           totalSelection.start,
@@ -416,7 +417,7 @@ export class Editor extends React.Component {
           this.mentionsMap.delete(key);
         }
       } else {
-        //multi-char deleted
+        // Multi-char delete.
         const mentionKeys = EU.getSelectedMentionKeys(
           this.mentionsMap,
           totalSelection,
@@ -426,10 +427,9 @@ export class Editor extends React.Component {
         });
       }
       /**
-       * update indexes on characters remove
-       * no need to worry about totalSelection End.
+       * Update indexes on char remove no need to worry about totalSelection End.
        * We already removed deleted mentions from the actual string.
-       * */
+       */
       this.updateMentionsMap(
         {
           start: selection.end,
@@ -535,6 +535,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   formattedTextWrapper: {
+    justifyContent: "center",
     position: "absolute",
     top: 0,
     left: 0,
