@@ -9,7 +9,7 @@ export class MentionListItem extends React.PureComponent {
   static propTypes = {
     item: PropTypes.object,
     onSuggestionTap: PropTypes.func,
-    editorStyles: PropTypes.object
+    customStyles: PropTypes.object
   };
 
   onSuggestionTap = (user) => {
@@ -17,12 +17,12 @@ export class MentionListItem extends React.PureComponent {
   };
 
   render() {
-    const { item: user, editorStyles } = this.props;
+    const { item: user, customStyles } = this.props;
     return (
       <View>
         <TouchableOpacity
           activeOpacity={0.8}
-          style={[styles.suggestionItem, editorStyles.mentionListItemWrapper]}
+          style={[styles.suggestionItem, customStyles.mentionListItemWrapper]}
           onPress={() => this.onSuggestionTap(user)}
         >
           <Avatar
@@ -31,12 +31,12 @@ export class MentionListItem extends React.PureComponent {
             charStyles={styles.thumbnailChar}
           />
 
-          <View style={[styles.text, editorStyles.mentionListItemTextWrapper]}>
-            <Text style={[styles.title, editorStyles.mentionListItemTitle]}>
+          <View style={[styles.text, customStyles.mentionListItemTextWrapper]}>
+            <Text style={[styles.title, customStyles.mentionListItemTitle]}>
               {user.name}
             </Text>
             <Text
-              style={[styles.username, editorStyles.mentionListItemUsername]}
+              style={[styles.username, customStyles.mentionListItemUsername]}
             >
               @{user.name}
             </Text>

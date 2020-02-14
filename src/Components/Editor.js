@@ -15,26 +15,38 @@ export class Editor extends React.Component {
     list: PropTypes.array,
     initialValue: PropTypes.string,
     clearInput: PropTypes.any,
-    fetchingMentions: PropTypes.bool,
     onChange: PropTypes.func,
     onChangeKeyword: PropTypes.func,
     showEditor: PropTypes.bool,
     toggleEditor: PropTypes.func,
     showMentions: PropTypes.bool,
     onHideMentions: PropTypes.func,
-    editorStyles: PropTypes.object,
+    customStyles: PropTypes.object,
     placeholder: PropTypes.string,
-    renderMentionList: PropTypes.func,
-    renderMention: PropTypes.func,
+
+    fetchingMentions: PropTypes.bool,
     horizontal: PropTypes.bool,
+    renderLeftView: PropTypes.func,
+    renderMention: PropTypes.func,
+    renderMentionList: PropTypes.func,
+    renderRightView: PropTypes.func,
+    triggerLocation: PropTypes.string, // 'new-words-only', // 'anywhere'
   };
 
   static defaultProps = {
-    editorStyles: {},
+    renderLeftView: () => {
+      return null;
+    },
+    renderRightView: () => {
+      return null;
+    },
+    renderMentionList: () => {},
+    customStyles: {},
     onChangeKeyword: () => {},
     fetchingMentions: false,
     showEditor: true,
     placeholder: "Type something, @mentions",
+    triggerLocation: "new-words-only",
   };
 
   selection = {
@@ -61,7 +73,6 @@ export class Editor extends React.Component {
       formattedText: formattedMsg,
       keyword: "",
       isTrackingStarted: false,
-      triggerLocation: "anywhere", //'new-words-only', //anywhere
       trigger: "@",
       selection: undefined,
       menIndex: 0,
@@ -151,7 +162,7 @@ export class Editor extends React.Component {
      */
     if (this.isTrackingStarted) {
       let pattern = null;
-      if (this.state.triggerLocation === "new-word-only") {
+      if (this.props.triggerLocation === "new-words-only") {
         pattern = new RegExp(
           `\\B${this.state.trigger}[a-z0-9_-]+|\\B${this.state.trigger}`,
           `gi`,
@@ -183,11 +194,11 @@ export class Editor extends React.Component {
     const menIndex = selection.start - 1;
     // const lastChar = inputText.substr(inputText.length - 1);
     const lastChar = inputText.substr(menIndex, 1);
-    const wordBoundry =
-      this.state.triggerLocation === "new-word-only"
+    const wordBoundary =
+      this.props.triggerLocation === "new-words-only"
         ? this.previousChar.trim().length === 0
         : true;
-    if (lastChar === this.state.trigger && wordBoundry) {
+    if (lastChar === this.state.trigger && wordBoundary) {
       this.startTracking(menIndex);
     } else if (lastChar.trim() === "" && this.state.isTrackingStarted) {
       this.stopTracking();
@@ -245,9 +256,7 @@ export class Editor extends React.Component {
 
   onSuggestionTap = user => {
     /**
-     * When user select a mention.
-     * Add a mention in the string.
-     * Also add a mention in the map
+     * When user taps a mention, add it to string and mention map.
      */
     const { inputText, menIndex } = this.state;
     const { initialStr, remStr } = this.getInitialAndRemainingStrings(
@@ -301,16 +310,7 @@ export class Editor extends React.Component {
     }
     this.selection = { ...newSelection };
 
-    this.setState(
-      {
-        selection: newSelection,
-      },
-      () => {
-        this.setState({
-          selection: undefined,
-        });
-      },
-    );
+    this.setState({ selection: newSelection });
   };
 
   formatMentionNode = (txt, key) => (
@@ -474,57 +474,91 @@ export class Editor extends React.Component {
     this.sendMessageToFooter(text);
   };
 
+  shouldMentionsShow = (state, props) => {
+    return (
+      state.isTrackingStarted &&
+      state.keyword.length > 1 &&
+      (props.fetchingMentions || props.list.length > 0)
+    );
+  };
+
   render() {
     const { props, state } = this;
-    const { editorStyles } = props;
+    const { customStyles, fetchingMentions, list } = props;
 
     if (!props.showEditor) return null;
 
+    const baseInputProps = {
+      ref: input => this.inputRef = input,
+      style: [styles.input, customStyles.input],
+      multiline: true,
+      value: state.inputText,
+      onBlur: props.toggleEditor,
+      onChangeText: this.onChange,
+      onSelectionChange: this.handleSelectionChange,
+    };
+
     const mentionListProps = {
-      editorStyles,
-      fetching: props.fetchingMentions,
+      customStyles,
+      fetching: fetchingMentions,
       horizontal: props.horizontal,
       keyword: state.keyword,
-      list: props.list,
+      list: list,
       onSuggestionTap: this.onSuggestionTap,
       renderMention: props.renderMention,
       // > 1 is used to ignore the trigger symbol.
-      show: state.isTrackingStarted && this.state.keyword.length > 1,
+      // The 'fetchingMentions || list.length > 0' is used to only show when there is content to avoid showing borders on empty content.
+      show: this.shouldMentionsShow(state, props),
+      input: this.inputRef
     };
 
     return (
-      <View>
-        {props.renderMentionList ? (
-          props.renderMentionList(mentionListProps)
-        ) : (
+      <View style={customStyles.container}>
+        {this.shouldMentionsShow(state, props) ? (
           <MentionList {...mentionListProps} />
+        ) : (
+          props.renderMentionList(mentionListProps)
         )}
-        <View style={styles.formattedTextWrapper}>
-          <Text style={[styles.formattedText, editorStyles.inputMaskText]}>
-            {state.formattedText}
-          </Text>
+        <View style={[styles.inputRow, customStyles.inputRow]}>
+          {this.props.renderLeftView()}
+          <View style={customStyles.inputContainer}>
+            <View
+            // Extra view here to put input & its mask on same spacing!
+            >
+              <View style={styles.formattedTextWrapper}>
+                <Text
+                  style={[styles.formattedText, customStyles.inputMaskText]}
+                >
+                  {state.formattedText}
+                </Text>
+              </View>
+              {Platform.OS === "ios" ? (
+                <TextInput
+                  {...this.props}
+                  {...baseInputProps}
+                  scrollEnabled={false}
+                  selection={this.state.selection}
+                />
+              ) : (
+                <TextInput
+                  {...this.props}
+                  {...baseInputProps}
+                  // FIXME: Add support for 'selection' on Android (quickly selecting & deselection mention when selecting more or less).
+                />
+              )}
+            </View>
+          </View>
+          {this.props.renderRightView()}
         </View>
-        <TextInput
-          blurOnSubmit={Platform.OS === "android"}
-          autoGrow={true}
-          {...this.props}
-          ref={input => props.onRef && props.onRef(input)}
-          style={[styles.input, editorStyles.input]}
-          multiline
-          name={"message"}
-          value={state.inputText}
-          onBlur={props.toggleEditor}
-          onChangeText={this.onChange}
-          selection={this.state.selection}
-          onSelectionChange={this.handleSelectionChange}
-          scrollEnabled={false}
-        />
       </View>
     );
   }
 }
 
 const styles = StyleSheet.create({
+  inputRow: {
+    flexDirection: "row",
+  },
   input: {
     color: "transparent",
     // Android fixes
