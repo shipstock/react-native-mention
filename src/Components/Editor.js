@@ -164,7 +164,7 @@ export class Editor extends React.Component {
       let pattern = null;
       if (this.props.triggerLocation === "new-words-only") {
         pattern = new RegExp(
-          `\\B${this.state.trigger}[a-z0-9_-]+|\\B${this.state.trigger}`,
+          `\\B${this.state.trigger}[a-z0-9_-]+|\\B${this.state.trigger}|${this.state.trigger}[a-z0-9_-]+`,
           `gi`,
         );
       } else {
