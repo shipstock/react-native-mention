@@ -51,16 +51,13 @@ export class Editor extends React.Component {
     triggerLocation: "new-words-only",
   };
 
-  selection = {
-    end: 0,
-    start: 0,
-  };
-
   constructor(props) {
     super(props);
+
     this.mentionsMap = new Map();
     let msg = "";
     let formattedMsg = "";
+
     if (props.initialValue && props.initialValue !== "") {
       const { map, newValue } = EU.getMentionsWithInputText(props.initialValue);
       this.mentionsMap = map;
@@ -70,6 +67,7 @@ export class Editor extends React.Component {
         this.sendMessageToFooter(newValue);
       });
     }
+
     this.state = {
       inputText: msg,
       formattedText: formattedMsg,
@@ -78,8 +76,10 @@ export class Editor extends React.Component {
       selection: undefined,
       showMentions: false,
     };
+
     this.isTrackingStarted = false;
     this.previousChar = " ";
+    this.selection = { end: 0, start: 0 };
   }
   static getDerivedStateFromProps(nextProps, prevState) {
     if (nextProps.showMentions && !prevState.showMentions) {
@@ -479,6 +479,8 @@ export class Editor extends React.Component {
   };
 
   shouldMentionsShow = (state, props) => {
+    // length > 1 is used to ignore the trigger symbol.
+    // The 'fetchingMentions || list.length > 0' is used to only show mentions when there is content to avoid showing borders on empty content.
     return (
       state.isTrackingStarted &&
       state.keyword.length > 1 &&
@@ -510,8 +512,6 @@ export class Editor extends React.Component {
       list: list,
       onSuggestionTap: this.onSuggestionTap,
       renderMention: props.renderMention,
-      // > 1 is used to ignore the trigger symbol.
-      // The 'fetchingMentions || list.length > 0' is used to only show when there is content to avoid showing borders on empty content.
       show: this.shouldMentionsShow(state, props),
     };
 
