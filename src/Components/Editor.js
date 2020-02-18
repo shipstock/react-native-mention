@@ -48,7 +48,7 @@ export class Editor extends React.Component {
     showEditor: true,
     placeholder: "Type something, @mentions",
     trigger: "@",
-    triggerLocation: "new-words-only",
+    triggerLocation: "anywhere",
   };
 
   constructor(props) {
