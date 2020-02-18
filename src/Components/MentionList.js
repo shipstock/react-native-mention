@@ -1,12 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {
-  ActivityIndicator,
-  Animated,
-  FlatList,
-  View,
-  StyleSheet,
-} from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 
 // - Project imports -
 // Components
@@ -17,14 +11,14 @@ import * as Colors from "../Constants/Colors";
 
 export class MentionList extends React.PureComponent {
   static propTypes = {
-    editorStyles: PropTypes.object,
+    customStyles: PropTypes.object,
     fetching: PropTypes.bool,
     horizontal: PropTypes.bool,
-    isTrackingStarted: PropTypes.bool,
     keyword: PropTypes.string,
     list: PropTypes.array,
     onSuggestionTap: PropTypes.func,
     renderMention: PropTypes.func,
+    show: PropTypes.bool,
   };
 
   static defaultProps = {
@@ -34,7 +28,6 @@ export class MentionList extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.previousChar = " ";
   }
 
   renderSuggestionsRow = ({ item, index }) => {
@@ -44,31 +37,34 @@ export class MentionList extends React.PureComponent {
       <MentionListItem
         onSuggestionTap={this.props.onSuggestionTap}
         item={item}
-        editorStyles={this.props.editorStyles}
+        customStyles={this.props.customStyles}
       />
     );
   };
+
   render() {
     const { props } = this;
     let content = null;
     const { fetching, list, show } = props;
 
+    // List styling.
+    const IOSListStyle = {
+      ...styles.suggestionsPanelStyleIOS,
+      top:
+        list.length > 0 && !props.horizontal
+          ? -(Constants.MENTION_ROW_HEIGHT * list.length) -
+            Constants.EXTRA_MENTIONS_OFFSET
+          : -Constants.MENTION_ROW_HEIGHT - Constants.EXTRA_MENTIONS_OFFSET,
+    };
+    const listStyle =
+      Platform.OS === "ios"
+        ? IOSListStyle
+        : styles.suggestionsPanelStyleAndroid;
+
+    // If wanting to show and it has content (avoids borders showing before list has content).
     if (show) {
       content = (
-        <Animated.View
-          style={[
-            {
-              top:
-                list.length > 0 && !props.horizontal
-                  ? -(Constants.MENTION_ROW_HEIGHT * list.length) -
-                    Constants.EXTRA_MENTIONS_OFFSET
-                  : -Constants.MENTION_ROW_HEIGHT -
-                    Constants.EXTRA_MENTIONS_OFFSET,
-              ...styles.suggestionsPanelStyle,
-            },
-            this.props.editorStyles.mentionsListWrapper,
-          ]}
-        >
+        <View style={[listStyle, this.props.customStyles.mentionsListContainer]}>
           <FlatList
             keyboardShouldPersistTaps={"always"}
             horizontal={props.horizontal}
@@ -82,11 +78,9 @@ export class MentionList extends React.PureComponent {
             enableEmptySections={true}
             data={list}
             keyExtractor={(item, index) => `${item.id}-${index}`}
-            renderItem={rowData => {
-              return this.renderSuggestionsRow(rowData);
-            }}
+            renderItem={this.renderSuggestionsRow}
           />
-        </Animated.View>
+        </View>
       );
     }
 
@@ -95,12 +89,16 @@ export class MentionList extends React.PureComponent {
 }
 
 const styles = StyleSheet.create({
-  suggestionsPanelStyle: {
+  suggestionsPanelStyleIOS: {
     position: "absolute",
     zIndex: 1,
-    backgroundColor: Colors.WHITE,
     borderRadius: 5,
     borderWidth: 1,
+    borderColor: Colors.MATERIAL_DIVIDER,
+  },
+  suggestionsPanelStyleAndroid: {
+    backgroundColor: Colors.ANDROID_MENTION_LIST_BACKGROUND,
+    borderBottomWidth: 1,
     borderColor: Colors.MATERIAL_DIVIDER,
   },
   loaderContainer: {

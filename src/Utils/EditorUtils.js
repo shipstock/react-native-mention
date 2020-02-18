@@ -79,34 +79,34 @@ export const EU = {
   },
   addMenInSelection: (selection, prevSelc, mentions) => {
     /**
-     * Both Mentions and Selections are 0-th index based in the strings
-     * meaning their indexes in the string start from 0
-     * While user made a selection automatically add mention in the selection.
+     * Both Mentions and Selections are 0-th index based in the strings.
+     * While user made a selection automatically add / remove mention in the selection.
      */
     const sel = { ...selection };
     mentions.forEach((value, [menStart, menEnd]) => {
       if (EU.diff(prevSelc.start, prevSelc.end) < EU.diff(sel.start, sel.end)) {
-        //user selecting.
+        // User is selecting more.
         if (EU.between(sel.start, menStart, menEnd)) {
-          //move sel to the start of mention
-          sel.start = menStart; //both men and selection is 0th index
+          // Start of selection has increased and is now IN a mention range.
+          sel.start = menStart; // Move start of selection to mention start (selects mention).
         }
         if (EU.between(sel.end - 1, menStart, menEnd)) {
-          //move sel to the end of mention
-          sel.end = menEnd + 1;
+          // End of selection has increased and is now IN a mention range.
+          sel.end = menEnd + 1; // Move end of selection to mention end (selects mention).
         }
       } else {
-        //previousSelection.diff > currentSelection.diff //user deselecting.
-        if (EU.between(sel.start, menStart, menEnd)) {
-          //deselect mention to the end of mention
-          sel.start = menEnd + 1;
+        // User is selecting less.
+        if (EU.between(sel.start - 1, menStart, menEnd)) {
+          // Start of selection has reduced and is now IN a mention range.
+          sel.start = menEnd + 1; // Move start selection to mention end (deselects mention).
         }
         if (EU.between(sel.end, menStart, menEnd)) {
-          //deselect mention to the start of mention
-          sel.end = menStart;
+          // End of selection has reduced and is now IN a mention range.
+          sel.end = menStart; // Move end selection to mention start (deselects mention).
         }
       }
     });
+
     return sel;
   },
   moveCursorToMentionBoundry: (
