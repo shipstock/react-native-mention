@@ -30,7 +30,8 @@ export class Editor extends React.Component {
     renderMention: PropTypes.func,
     renderMentionList: PropTypes.func,
     renderRightView: PropTypes.func,
-    triggerLocation: PropTypes.string, // 'new-words-only', // 'anywhere'
+    trigger: PropTypes.string, // '@', '#', ...
+    triggerLocation: PropTypes.string, // 'new-words-only', 'anywhere'
   };
 
   static defaultProps = {
@@ -46,6 +47,7 @@ export class Editor extends React.Component {
     fetchingMentions: false,
     showEditor: true,
     placeholder: "Type something, @mentions",
+    trigger: "@",
     triggerLocation: "new-words-only",
   };
 
@@ -73,9 +75,7 @@ export class Editor extends React.Component {
       formattedText: formattedMsg,
       keyword: "",
       isTrackingStarted: false,
-      trigger: "@",
       selection: undefined,
-      menIndex: 0,
       showMentions: false,
     };
     this.isTrackingStarted = false;
@@ -83,7 +83,7 @@ export class Editor extends React.Component {
   }
   static getDerivedStateFromProps(nextProps, prevState) {
     if (nextProps.showMentions && !prevState.showMentions) {
-      const newInputText = `${prevState.inputText}${prevState.trigger}`;
+      const newInputText = `${prevState.inputText}${nextProps.trigger}`;
       return {
         inputText: newInputText,
         showMentions: nextProps.showMentions,
@@ -164,13 +164,13 @@ export class Editor extends React.Component {
       let pattern = null;
       if (this.props.triggerLocation === "new-words-only") {
         pattern = new RegExp(
-          `\\B${this.state.trigger}[a-z0-9_-]+|\\B${this.state.trigger}|${this.state.trigger}[a-z0-9_-]+`,
+          `\\B${this.props.trigger}[a-z0-9_-]+|\\B${this.props.trigger}`,
           `gi`,
         );
       } else {
         //anywhere
         pattern = new RegExp(
-          `\\${this.state.trigger}[a-z0-9_-]+|\\${this.state.trigger}`,
+          `\\${this.props.trigger}[a-z0-9_-]+|\\${this.props.trigger}`,
           `i`,
         );
       }
@@ -188,17 +188,15 @@ export class Editor extends React.Component {
 
   checkForMention(inputText, selection) {
     /**
-     * Open mentions list if user
-     * start typing @ in the string anywhere.
+     * Open mentions list if user starts typing @.
      */
     const menIndex = selection.start - 1;
-    // const lastChar = inputText.substr(inputText.length - 1);
     const lastChar = inputText.substr(menIndex, 1);
     const wordBoundary =
       this.props.triggerLocation === "new-words-only"
         ? this.previousChar.trim().length === 0
         : true;
-    if (lastChar === this.state.trigger && wordBoundary) {
+    if (lastChar === this.props.trigger && wordBoundary) {
       this.startTracking(menIndex);
     } else if (lastChar.trim() === "" && this.state.isTrackingStarted) {
       this.stopTracking();
@@ -209,13 +207,12 @@ export class Editor extends React.Component {
 
   getInitialAndRemainingStrings(inputText, menIndex) {
     /**
-     * extractInitialAndRemainingStrings
+     * getInitialAndRemainingStrings
      * this function extract the initialStr and remainingStr
      * at the point of new Mention string.
      * Also updates the remaining string if there
      * are any adjacent mentions text with the new one.
      */
-    // const {inputText, menIndex} = this.state;
     let initialStr = inputText.substr(0, menIndex).trim();
     if (!EU.isEmpty(initialStr)) {
       initialStr = initialStr + " ";
@@ -258,10 +255,10 @@ export class Editor extends React.Component {
     /**
      * When user taps a mention, add it to string and mention map.
      */
-    const { inputText, menIndex } = this.state;
+    const { inputText } = this.state;
     const { initialStr, remStr } = this.getInitialAndRemainingStrings(
       inputText,
-      menIndex,
+      this.menIndex,
     );
 
     const name = `@${user.name}`;
@@ -376,7 +373,15 @@ export class Editor extends React.Component {
   onChange = (inputText, fromAtBtn) => {
     let text = inputText;
     const prevText = this.state.inputText;
-    const selection = this.selection;
+    let selection = this.selection;
+    // FIXME: Workaround for inconsistent event firing (iOS/Android) causing a selection delay for Android (https://github.com/facebook/react-native/issues/18221).
+    if (Platform.OS === "android") {
+      selection =
+        inputText.length > prevText.length
+          ? { start: selection.start + 1, end: selection.end + 1 }
+          : { start: selection.start - 1, end: selection.end - 1 };
+    }
+
     if (fromAtBtn) {
       // Update selection but don't set in state it will be auto set by input.
       selection.start = selection.start + 1;
@@ -489,7 +494,7 @@ export class Editor extends React.Component {
     if (!props.showEditor) return null;
 
     const baseInputProps = {
-      ref: input => this.inputRef = input,
+      ref: input => (this.inputRef = input),
       style: [styles.input, customStyles.input],
       multiline: true,
       value: state.inputText,
@@ -509,7 +514,7 @@ export class Editor extends React.Component {
       // > 1 is used to ignore the trigger symbol.
       // The 'fetchingMentions || list.length > 0' is used to only show when there is content to avoid showing borders on empty content.
       show: this.shouldMentionsShow(state, props),
-      input: this.inputRef
+      input: this.inputRef,
     };
 
     return (

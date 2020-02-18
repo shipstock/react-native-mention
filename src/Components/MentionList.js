@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { ActivityIndicator, FlatList, View, StyleSheet } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 
 // - Project imports -
 // Components
@@ -41,6 +41,7 @@ export class MentionList extends React.PureComponent {
       />
     );
   };
+
   render() {
     const { props } = this;
     let content = null;
@@ -77,9 +78,7 @@ export class MentionList extends React.PureComponent {
             enableEmptySections={true}
             data={list}
             keyExtractor={(item, index) => `${item.id}-${index}`}
-            renderItem={rowData => {
-              return this.renderSuggestionsRow(rowData);
-            }}
+            renderItem={this.renderSuggestionsRow}
           />
         </View>
       );
@@ -93,12 +92,12 @@ const styles = StyleSheet.create({
   suggestionsPanelStyleIOS: {
     position: "absolute",
     zIndex: 1,
-    backgroundColor: Colors.WHITE,
     borderRadius: 5,
     borderWidth: 1,
     borderColor: Colors.MATERIAL_DIVIDER,
   },
   suggestionsPanelStyleAndroid: {
+    backgroundColor: Colors.ANDROID_MENTION_LIST_BACKGROUND,
     borderBottomWidth: 1,
     borderColor: Colors.MATERIAL_DIVIDER,
   },
