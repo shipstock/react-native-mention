@@ -1,100 +1,118 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
 
-import {
-  View,
-  TextInput,
-  Text,
-  Animated,
-  Platform,
-  ScrollView
-} from "react-native";
-
-import EU from "./EditorUtils";
-import styles from "./EditorStyles";
-import MentionList from "../MentionList";
+// - Project imports -
+// Components
+import MentionList from "./MentionList";
+// Styling
+import * as Colors from "./../Constants/Colors";
+// Utils
+import EU from "../Utils/EditorUtils";
 
 export class Editor extends React.Component {
   static propTypes = {
     list: PropTypes.array,
     initialValue: PropTypes.string,
-    clearInput: PropTypes.bool,
+    clearInput: PropTypes.any,
     onChange: PropTypes.func,
+    onChangeKeyword: PropTypes.func,
     showEditor: PropTypes.bool,
     toggleEditor: PropTypes.func,
     showMentions: PropTypes.bool,
     onHideMentions: PropTypes.func,
-    editorStyles: PropTypes.object,
+    customStyles: PropTypes.object,
     placeholder: PropTypes.string,
-    renderMentionList: PropTypes.func
+
+    fetchingMentions: PropTypes.bool,
+    horizontal: PropTypes.bool,
+    renderLeftView: PropTypes.func,
+    renderMention: PropTypes.func,
+    renderMentionList: PropTypes.func,
+    renderRightView: PropTypes.func,
+    trigger: PropTypes.string, // '@', '#', ...
+    triggerLocation: PropTypes.string, // 'new-words-only', 'anywhere'
+  };
+
+  static defaultProps = {
+    renderLeftView: () => {
+      return null;
+    },
+    renderRightView: () => {
+      return null;
+    },
+    renderMentionList: () => {},
+    customStyles: {},
+    onChangeKeyword: () => {},
+    fetchingMentions: false,
+    showEditor: true,
+    placeholder: "Type something, @mentions",
+    trigger: "@",
+    triggerLocation: "anywhere",
   };
 
   constructor(props) {
     super(props);
+
     this.mentionsMap = new Map();
     let msg = "";
     let formattedMsg = "";
+
     if (props.initialValue && props.initialValue !== "") {
       const { map, newValue } = EU.getMentionsWithInputText(props.initialValue);
       this.mentionsMap = map;
       msg = newValue;
       formattedMsg = this.formatText(newValue);
-      setTimeout(()=>{
+      setTimeout(() => {
         this.sendMessageToFooter(newValue);
       });
     }
+
     this.state = {
-      clearInput: props.clearInput,
       inputText: msg,
       formattedText: formattedMsg,
       keyword: "",
-      textInputHeight: "",
       isTrackingStarted: false,
-      suggestionRowHeight: new Animated.Value(0),
-      triggerLocation: "anywhere", //'new-words-only', //anywhere
-      trigger: "@",
-      selection: {
-        start: 0,
-        end: 0
-      },
-      menIndex: 0,
+      selection: undefined,
       showMentions: false,
-      editorHeight: 72,
-      scrollContentInset: { top: 0, bottom: 0, left: 0, right: 0 },
-      placeholder: props.placeholder || "Type something..."
     };
+
     this.isTrackingStarted = false;
     this.previousChar = " ";
+    this.selection = { end: 0, start: 0 };
   }
   static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.clearInput !== prevState.clearInput) {
-      return { clearInput: nextProps.clearInput };
-    }
-
     if (nextProps.showMentions && !prevState.showMentions) {
-      const newInputText = `${prevState.inputText}${prevState.trigger}`;
+      const newInputText = `${prevState.inputText}${nextProps.trigger}`;
       return {
         inputText: newInputText,
-        showMentions: nextProps.showMentions
+        showMentions: nextProps.showMentions,
       };
     }
 
     if (!nextProps.showMentions) {
       return {
-        showMentions: nextProps.showMentions
+        showMentions: nextProps.showMentions,
       };
     }
     return null;
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // only update chart if the data has changed
-    if (this.state.inputText !== "" && this.state.clearInput) {
+    // Clear input when passing different 'clearInput' value.
+    if (
+      this.state.inputText !== "" &&
+      prevProps.clearInput !== this.props.clearInput
+    ) {
       this.setState({
         inputText: "",
-        formattedText: ""
+        formattedText: "",
       });
       this.mentionsMap.clear();
+      this.props.onChange({
+        displayText: "",
+        text: "",
+      });
     }
 
     if (EU.whenTrue(this.props, prevProps, "showMentions")) {
@@ -108,7 +126,7 @@ export class Editor extends React.Component {
       this.mentionsMap,
       selection,
       count,
-      shouldAdd
+      shouldAdd,
     );
   }
 
@@ -117,8 +135,7 @@ export class Editor extends React.Component {
     this.menIndex = menIndex;
     this.setState({
       keyword: "",
-      menIndex,
-      isTrackingStarted: true
+      isTrackingStarted: true,
     });
   }
 
@@ -126,21 +143,14 @@ export class Editor extends React.Component {
     this.isTrackingStarted = false;
     // this.closeSuggestionsPanel();
     this.setState({
-      isTrackingStarted: false
+      isTrackingStarted: false,
     });
     this.props.onHideMentions();
-  }
-
-  updateSuggestions(lastKeyword) {
-    this.setState({
-      keyword: lastKeyword
-    });
   }
 
   resetTextbox() {
     this.previousChar = " ";
     this.stopTracking();
-    this.setState({ textInputHeight: this.props.textInputMinHeight });
   }
 
   identifyKeyword(inputText) {
@@ -151,40 +161,41 @@ export class Editor extends React.Component {
      */
     if (this.isTrackingStarted) {
       let pattern = null;
-      if (this.state.triggerLocation === "new-word-only") {
+      if (this.props.triggerLocation === "new-words-only") {
         pattern = new RegExp(
-          `\\B${this.state.trigger}[a-z0-9_-]+|\\B${this.state.trigger}`,
-          `gi`
+          `\\B${this.props.trigger}[a-z0-9_-]+|\\B${this.props.trigger}`,
+          `gi`,
         );
       } else {
         //anywhere
         pattern = new RegExp(
-          `\\${this.state.trigger}[a-z0-9_-]+|\\${this.state.trigger}`,
-          `i`
+          `\\${this.props.trigger}[a-z0-9_-]+|\\${this.props.trigger}`,
+          `i`,
         );
       }
       const str = inputText.substr(this.menIndex);
       const keywordArray = str.match(pattern);
       if (keywordArray && !!keywordArray.length) {
         const lastKeyword = keywordArray[keywordArray.length - 1];
-        this.updateSuggestions(lastKeyword);
+        this.props.onChangeKeyword(lastKeyword);
+        this.setState({
+          keyword: lastKeyword,
+        });
       }
     }
   }
 
   checkForMention(inputText, selection) {
     /**
-     * Open mentions list if user
-     * start typing @ in the string anywhere.
+     * Open mentions list if user starts typing @.
      */
     const menIndex = selection.start - 1;
-    // const lastChar = inputText.substr(inputText.length - 1);
     const lastChar = inputText.substr(menIndex, 1);
-    const wordBoundry =
-      this.state.triggerLocation === "new-word-only"
+    const wordBoundary =
+      this.props.triggerLocation === "new-words-only"
         ? this.previousChar.trim().length === 0
         : true;
-    if (lastChar === this.state.trigger && wordBoundry) {
+    if (lastChar === this.props.trigger && wordBoundary) {
       this.startTracking(menIndex);
     } else if (lastChar.trim() === "" && this.state.isTrackingStarted) {
       this.stopTracking();
@@ -195,19 +206,18 @@ export class Editor extends React.Component {
 
   getInitialAndRemainingStrings(inputText, menIndex) {
     /**
-     * extractInitialAndRemainingStrings
+     * getInitialAndRemainingStrings
      * this function extract the initialStr and remainingStr
      * at the point of new Mention string.
      * Also updates the remaining string if there
-     * are any adjcent mentions text with the new one.
+     * are any adjacent mentions text with the new one.
      */
-    // const {inputText, menIndex} = this.state;
     let initialStr = inputText.substr(0, menIndex).trim();
     if (!EU.isEmpty(initialStr)) {
       initialStr = initialStr + " ";
     }
     /**
-     * remove the characters adjcent with @ sign
+     * remove the characters adjacent with @ sign
      * and extract the remaining part
      */
     let remStr =
@@ -217,48 +227,46 @@ export class Editor extends React.Component {
         .split("\x01")[1] || "";
 
     /**
-     * check if there are any adjecent mentions
+     * check if there are any adjacent mentions
      * subtracted in current selection.
-     * add the adjcent mentions
+     * add the adjacent mentions
      * @tim@nic
      * add nic back
      */
     const adjMentIndexes = {
       start: initialStr.length - 1,
-      end: inputText.length - remStr.length - 1
+      end: inputText.length - remStr.length - 1,
     };
     const mentionKeys = EU.getSelectedMentionKeys(
       this.mentionsMap,
-      adjMentIndexes
+      adjMentIndexes,
     );
     mentionKeys.forEach(key => {
-      remStr = `@${this.mentionsMap.get(key).username} ${remStr}`;
+      remStr = `@${this.mentionsMap.get(key).name} ${remStr}`;
     });
     return {
       initialStr,
-      remStr
+      remStr,
     };
   }
 
   onSuggestionTap = user => {
     /**
-     * When user select a mention.
-     * Add a mention in the string.
-     * Also add a mention in the map
+     * When user taps a mention, add it to string and mention map.
      */
-    const { inputText, menIndex } = this.state;
+    const { inputText } = this.state;
     const { initialStr, remStr } = this.getInitialAndRemainingStrings(
       inputText,
-      menIndex
+      this.menIndex,
     );
 
-    const username = `@${user.username}`;
-    const text = `${initialStr}${username} ${remStr}`;
+    const name = `@${user.name}`;
+    const text = `${initialStr}${name} ${remStr}`;
     //'@[__display__](__id__)' ///find this trigger parsing from react-mentions
 
     //set the mentions in the map.
     const menStartIndex = initialStr.length;
-    const menEndIndex = menStartIndex + (username.length - 1);
+    const menEndIndex = menStartIndex + (name.length - 1);
 
     this.mentionsMap.set([menStartIndex, menEndIndex], user);
 
@@ -267,42 +275,38 @@ export class Editor extends React.Component {
     this.updateMentionsMap(
       {
         start: menEndIndex + 1,
-        end: text.length
+        end: text.length,
       },
       charAdded,
-      true
+      true,
     );
 
     this.setState({
       inputText: text,
-      formattedText: this.formatText(text)
+      formattedText: this.formatText(text),
     });
     this.stopTracking();
     this.sendMessageToFooter(text);
   };
 
   handleSelectionChange = ({ nativeEvent: { selection } }) => {
-    const prevSelc = this.state.selection;
-    let newSelc = { ...selection };
-    if (newSelc.start !== newSelc.end) {
-      /**
-       * if user make or remove selection
-       * Automatically add or remove mentions
-       * in the selection.
-       */
-      newSelc = EU.addMenInSelection(newSelc, prevSelc, this.mentionsMap);
+    const prevSelection = this.selection;
+    let newSelection = selection;
+    if (
+      selection.start !== selection.end &&
+      (selection.start !== prevSelection.start ||
+        selection.end !== prevSelection.end)
+    ) {
+      // If selection changes automatically add or remove mentions to selection.
+      newSelection = EU.addMenInSelection(
+        newSelection,
+        prevSelection,
+        this.mentionsMap,
+      );
     }
-    // else{
-    /**
-     * Update cursor to not land on mention
-     * Automatically skip mentions boundry
-     */
-    // setTimeout(()=>{
+    this.selection = { ...newSelection };
 
-    // })
-    // newSelc = EU.moveCursorToMentionBoundry(newSelc, prevSelc, this.mentionsMap, this.isTrackingStarted);
-    // }
-    this.setState({ selection: newSelc });
+    this.setState({ selection: newSelection });
   };
 
   formatMentionNode = (txt, key) => (
@@ -313,9 +317,7 @@ export class Editor extends React.Component {
 
   formatText(inputText) {
     /**
-     * Format the Mentions
-     * and display them with
-     * the different styles
+     * Format the Mentions and display them with the different styles.
      */
     if (inputText === "" || !this.mentionsMap.size) return inputText;
     const formattedText = [];
@@ -326,8 +328,8 @@ export class Editor extends React.Component {
       lastIndex = end + 1;
       formattedText.push(initialStr);
       const formattedMention = this.formatMentionNode(
-        `@${men.username}`,
-        `${start}-${men.id}-${end}`
+        `@${men.name}`,
+        `${start}-${men.id}-${end}`,
       );
       formattedText.push(formattedMention);
       if (
@@ -349,7 +351,7 @@ export class Editor extends React.Component {
         start === 1 ? "" : inputText.substring(lastIndex, start);
       lastIndex = end + 1;
       formattedText = formattedText.concat(initialStr);
-      formattedText = formattedText.concat(`@[${men.username}](id:${men.id})`);
+      formattedText = formattedText.concat(`@[${men.name}](id:${men.id})`);
       if (
         EU.isKeysAreSame(EU.getLastKeyInMap(this.mentionsMap), [start, end])
       ) {
@@ -363,40 +365,44 @@ export class Editor extends React.Component {
   sendMessageToFooter(text) {
     this.props.onChange({
       displayText: text,
-      text: this.formatTextWithMentions(text)
+      text: this.formatTextWithMentions(text),
     });
   }
 
   onChange = (inputText, fromAtBtn) => {
     let text = inputText;
     const prevText = this.state.inputText;
-    let selection = { ...this.state.selection };
+    let selection = this.selection;
+    // FIXME: Workaround for inconsistent event firing (iOS/Android) causing a selection delay for Android (https://github.com/facebook/react-native/issues/18221).
+    if (Platform.OS === "android") {
+      selection =
+        inputText.length > prevText.length
+          ? { start: selection.start + 1, end: selection.end + 1 }
+          : { start: selection.start - 1, end: selection.end - 1 };
+    }
+
     if (fromAtBtn) {
-      //update selection but don't set in state
-      //it will be auto set by input
+      // Update selection but don't set in state it will be auto set by input.
       selection.start = selection.start + 1;
       selection.end = selection.end + 1;
     }
     if (text.length < prevText.length) {
       /**
-       * if user is back pressing and it
-       * deletes the mention remove it from
-       * actual string.
+       * If user is back pressing and it deletes the mention remove it from string.
        */
-
       let charDeleted = Math.abs(text.length - prevText.length);
       const totalSelection = {
         start: selection.start,
-        end: charDeleted > 1 ? selection.start + charDeleted : selection.start
+        end: charDeleted > 1 ? selection.start + charDeleted : selection.start,
       };
       /**
-       * REmove all the selected mentions
+       * Remove all the selected mentions
        */
       if (totalSelection.start === totalSelection.end) {
-        //single char deleting
+        // Single char deleting.
         const key = EU.findMentionKeyInMap(
           this.mentionsMap,
-          totalSelection.start
+          totalSelection.start,
         );
         if (key && key.length) {
           this.mentionsMap.delete(key);
@@ -415,39 +421,38 @@ export class Editor extends React.Component {
           this.mentionsMap.delete(key);
         }
       } else {
-        //multi-char deleted
+        // Multi-char delete.
         const mentionKeys = EU.getSelectedMentionKeys(
           this.mentionsMap,
-          totalSelection
+          totalSelection,
         );
         mentionKeys.forEach(key => {
           this.mentionsMap.delete(key);
         });
       }
       /**
-       * update indexes on charcters remove
-       * no need to worry about totalSelection End.
+       * Update indexes on char remove no need to worry about totalSelection End.
        * We already removed deleted mentions from the actual string.
-       * */
+       */
       this.updateMentionsMap(
         {
           start: selection.end,
-          end: prevText.length
+          end: prevText.length,
         },
         charDeleted,
-        false
+        false,
       );
     } else {
-      //update indexes on new charcter add
+      //update indexes on new character add
 
       let charAdded = Math.abs(text.length - prevText.length);
       this.updateMentionsMap(
         {
           start: selection.end,
-          end: text.length
+          end: text.length,
         },
         charAdded,
-        true
+        true,
       );
       /**
        * if user type anything on the mention
@@ -456,7 +461,7 @@ export class Editor extends React.Component {
       if (selection.start === selection.end) {
         const key = EU.findMentionKeyInMap(
           this.mentionsMap,
-          selection.start - 1
+          selection.start - 1,
         );
         if (key && key.length) {
           this.mentionsMap.delete(key);
@@ -466,122 +471,122 @@ export class Editor extends React.Component {
 
     this.setState({
       inputText: text,
-      formattedText: this.formatText(text)
-      // selection,
+      formattedText: this.formatText(text),
     });
     this.checkForMention(text, selection);
-    // const text = `${initialStr} @[${user.username}](id:${user.id}) ${remStr}`; //'@[__display__](__id__)' ///find this trigger parsing from react-mentions
 
     this.sendMessageToFooter(text);
   };
 
-  onContentSizeChange = evt => {
-    /**
-     * this function will dynamically
-     * calculate editor height w.r.t
-     * the size of text in the input.
-     */
-    if (evt) {
-      // const iosTextHeight = 20.5
-      const androidTextHeight = 20.5;
-      // const textHeight = Platform.OS === 'ios' ? iosTextHeight : androidTextHeight
-
-      const height =
-        Platform.OS === "ios"
-          ? evt.nativeEvent.contentSize.height
-          : evt.nativeEvent.contentSize.height - androidTextHeight;
-      let editorHeight = 40;
-      editorHeight = editorHeight + height;
-      this.setState({
-        editorHeight
-      });
-    }
+  shouldMentionsShow = (state, props) => {
+    // length > 1 is used to ignore the trigger symbol.
+    // The 'fetchingMentions || list.length > 0' is used to only show mentions when there is content to avoid showing borders on empty content.
+    return (
+      state.isTrackingStarted &&
+      state.keyword.length > 1 &&
+      (props.fetchingMentions || props.list.length > 0)
+    );
   };
 
   render() {
     const { props, state } = this;
-    const { editorStyles = {} } = props;
+    const { customStyles, fetchingMentions, list } = props;
 
     if (!props.showEditor) return null;
 
+    const baseInputProps = {
+      ref: input => props.onRef && props.onRef(input),
+      style: [styles.input, customStyles.input],
+      multiline: true,
+      value: state.inputText,
+      onBlur: props.toggleEditor,
+      onChangeText: this.onChange,
+      onSelectionChange: this.handleSelectionChange,
+    };
+
     const mentionListProps = {
-      list: props.list,
+      customStyles,
+      fetching: fetchingMentions,
+      horizontal: props.horizontal,
       keyword: state.keyword,
-      isTrackingStarted: state.isTrackingStarted,
-      onSuggestionTap: this.onSuggestionTap.bind(this),
-      editorStyles
+      list: list,
+      onSuggestionTap: this.onSuggestionTap,
+      renderMention: props.renderMention,
+      show: this.shouldMentionsShow(state, props),
     };
 
     return (
-      <View styles={editorStyles.mainContainer}>
-        {props.renderMentionList ? (
-          props.renderMentionList(mentionListProps)
+      <View style={customStyles.container}>
+        {this.shouldMentionsShow(state, props) ? (
+          <MentionList {...mentionListProps} />
         ) : (
-          <MentionList
-            list={props.list}
-            keyword={state.keyword}
-            isTrackingStarted={state.isTrackingStarted}
-            onSuggestionTap={this.onSuggestionTap}
-            editorStyles={editorStyles}
-          />
+          props.renderMentionList(mentionListProps)
         )}
-        <View style={[styles.container, editorStyles.mainContainer]}>
-          <ScrollView
-            ref={scroll => {
-              this.scroll = scroll;
-            }}
-            onContentSizeChange={() => {
-              this.scroll.scrollToEnd({ animated: true });
-            }}
-            style={[styles.editorContainer, editorStyles.editorContainer]}
-          >
-            <View style={[{ height: this.state.editorHeight }]}>
-              <View
-                style={[
-                  styles.formmatedTextWrapper,
-                  editorStyles.inputMaskTextWrapper
-                ]}
-              >
-                {state.formattedText !== "" ? (
-                  <Text
-                    style={[styles.formmatedText, editorStyles.inputMaskText]}
-                  >
-                    {state.formattedText}
-                  </Text>
-                ) : (
-                  <Text
-                    style={[
-                      styles.placeholderText,
-                      editorStyles.placeholderText
-                    ]}
-                  >
-                    {state.placeholder}
-                  </Text>
-                )}
+        <View style={[styles.inputRow, customStyles.inputRow]}>
+          {this.props.renderLeftView()}
+          <View style={customStyles.inputContainer}>
+            <View
+            // Extra view here to put input & its mask on same spacing!
+            >
+              <View style={styles.formattedTextWrapper}>
+                <Text
+                  style={[styles.formattedText, customStyles.inputMaskText]}
+                >
+                  {state.formattedText}
+                </Text>
               </View>
-              <TextInput
-                ref={input => props.onRef && props.onRef(input)}
-                style={[styles.input, editorStyles.input]}
-                multiline
-                autoFocus
-                numberOfLines={100}
-                name={"message"}
-                value={state.inputText}
-                onBlur={props.toggleEditor}
-                onChangeText={this.onChange}
-                selection={this.state.selection}
-                selectionColor={"#000"}
-                onSelectionChange={this.handleSelectionChange}
-                placeholder={state.placeholder}
-                onContentSizeChange={this.onContentSizeChange}
-                scrollEnabled={false}
-              />
+              {Platform.OS === "ios" ? (
+                <TextInput
+                  {...this.props}
+                  {...baseInputProps}
+                  scrollEnabled={false}
+                  selection={this.state.selection}
+                />
+              ) : (
+                <TextInput
+                  {...this.props}
+                  {...baseInputProps}
+                  // FIXME: Add support for 'selection' on Android (quickly selecting & deselection mention when selecting more or less).
+                />
+              )}
             </View>
-          </ScrollView>
+          </View>
+          {this.props.renderRightView()}
         </View>
       </View>
     );
   }
 }
+
+const styles = StyleSheet.create({
+  inputRow: {
+    flexDirection: "row",
+  },
+  input: {
+    color: "transparent",
+    // Android fixes
+    padding: 0,
+    margin: 0,
+    // Padding to look decent with multiple lines
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
+  formattedTextWrapper: {
+    justifyContent: "center",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingVertical: 4,
+  },
+  formattedText: {
+    color: Colors.MATERIAL_PRIMARY_TEXT,
+  },
+  mention: {
+    backgroundColor: Colors.MENTION_BACKGROUND,
+    color: Colors.MENTION_TEXT,
+  },
+});
 
 export default Editor;

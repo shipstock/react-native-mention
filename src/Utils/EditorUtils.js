@@ -5,7 +5,7 @@
 
 export const displayTextWithMentions = (inputText, formatMentionNode) => {
   /**
-   * Use this function to parse mentions markup @[username](id) in the string value.
+   * Use this function to parse mentions markup @[name](id) in the string value.
    */
   if (inputText === "") return null;
   const retLines = inputText.split("\n");
@@ -19,8 +19,8 @@ export const displayTextWithMentions = (inputText, formatMentionNode) => {
         lastIndex = men.end + 1;
         formattedText.push(initialStr);
         const formattedMention = formatMentionNode(
-          `@${men.username}`,
-          `${index}-${men.id}-${rowIndex}`
+          `@${men.name}`,
+          `${index}-${men.id}-${rowIndex}`,
         );
         formattedText.push(formattedMention);
         if (mentions.length - 1 === index) {
@@ -41,7 +41,7 @@ export const EU = {
     mention: "mention",
     strong: "strong",
     italic: "italic",
-    underline: "underline"
+    underline: "underline",
   },
   isKeysAreSame: (src, dest) => src.toString() === dest.toString(),
   getLastItemInMap: map => Array.from(map)[map.size - 1],
@@ -66,7 +66,7 @@ export const EU = {
     // selection [3, 6]
     const mantionKeys = [...map.keys()];
     const keys = mantionKeys.filter(
-      ([a, b]) => EU.between(a, start, end) || EU.between(b, start, end)
+      ([a, b]) => EU.between(a, start, end) || EU.between(b, start, end),
     );
     return keys;
   },
@@ -79,41 +79,41 @@ export const EU = {
   },
   addMenInSelection: (selection, prevSelc, mentions) => {
     /**
-     * Both Mentions and Selections are 0-th index based in the strings
-     * meaning their indexes in the string start from 0
-     * While user made a selection automatically add mention in the selection.
+     * Both Mentions and Selections are 0-th index based in the strings.
+     * While user made a selection automatically add / remove mention in the selection.
      */
     const sel = { ...selection };
     mentions.forEach((value, [menStart, menEnd]) => {
       if (EU.diff(prevSelc.start, prevSelc.end) < EU.diff(sel.start, sel.end)) {
-        //user selecting.
+        // User is selecting more.
         if (EU.between(sel.start, menStart, menEnd)) {
-          //move sel to the start of mention
-          sel.start = menStart; //both men and selection is 0th index
+          // Start of selection has increased and is now IN a mention range.
+          sel.start = menStart; // Move start of selection to mention start (selects mention).
         }
         if (EU.between(sel.end - 1, menStart, menEnd)) {
-          //move sel to the end of mention
-          sel.end = menEnd + 1;
+          // End of selection has increased and is now IN a mention range.
+          sel.end = menEnd + 1; // Move end of selection to mention end (selects mention).
         }
       } else {
-        //previousSelection.diff > currentSelection.diff //user deselecting.
-        if (EU.between(sel.start, menStart, menEnd)) {
-          //deselect mention to the end of mention
-          sel.start = menEnd + 1;
+        // User is selecting less.
+        if (EU.between(sel.start - 1, menStart, menEnd)) {
+          // Start of selection has reduced and is now IN a mention range.
+          sel.start = menEnd + 1; // Move start selection to mention end (deselects mention).
         }
         if (EU.between(sel.end, menStart, menEnd)) {
-          //deselect mention to the start of mention
-          sel.end = menStart;
+          // End of selection has reduced and is now IN a mention range.
+          sel.end = menStart; // Move end selection to mention start (deselects mention).
         }
       }
     });
+
     return sel;
   },
   moveCursorToMentionBoundry: (
     selection,
     prevSelc,
     mentions,
-    isTrackingStarted
+    isTrackingStarted,
   ) => {
     /**
      * Both Mentions and Selections are 0-th index based in the strings
@@ -166,12 +166,12 @@ export const EU = {
         let endIndexDiff = 0;
         mentions.forEach((men, index) => {
           newValue = newValue.concat(retLine.substring(lastIndex, men.start));
-          const username = `@${men.username}`;
-          newValue = newValue.concat(username);
-          const menEndIndex = men.start + (username.length - 1);
+          const name = `@${men.name}`;
+          newValue = newValue.concat(name);
+          const menEndIndex = men.start + (name.length - 1);
           map.set([men.start - endIndexDiff, menEndIndex - endIndexDiff], {
             id: men.id,
-            username: men.username
+            name: men.name,
           });
           //indexes diff with the new formatted string.
           endIndexDiff = endIndexDiff + Math.abs(men.end - menEndIndex);
@@ -191,7 +191,7 @@ export const EU = {
     });
     return {
       map,
-      newValue
+      newValue,
     };
   },
   findMentions: val => {
@@ -206,14 +206,31 @@ export const EU = {
     let indexes = [];
     while ((match = reg.exec(val))) {
       indexes.push({
-        start: match.index,
+        start: match.MentionList,
         end: reg.lastIndex - 1,
-        username: match[1],
+        name: match[1],
         id: match[2],
-        type: EU.specialTagsEnum.mention
+        type: EU.specialTagsEnum.mention,
       });
     }
     return indexes;
+  },
+  /**
+   * Get text + list of mentions from text containing mentions.
+   * @param data (data containing the text with mentions and the displayValue).
+   * @returns object of text (displayText) and found mentions
+   */
+  getTextAndMentions: data => {
+    const mentions = EU.findMentions(data.text);
+    const mentionsObject = {};
+    mentions.forEach(m => {
+      mentionsObject[m.name] = m.id;
+    });
+
+    return {
+      text: data.displayText,
+      mentions: mentionsObject,
+    };
   },
   whenTrue: (next, current, key) => {
     /**
@@ -229,7 +246,7 @@ export const EU = {
      */
     return next[key] && next[key] !== current[key];
   },
-  displayTextWithMentions: displayTextWithMentions
+  displayTextWithMentions: displayTextWithMentions,
 };
 
 export default EU;

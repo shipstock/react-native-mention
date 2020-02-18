@@ -1,9 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-import { View, Text } from "react-native";
-
-import styles from "./AvatarStyles";
+import { StyleSheet, Text, View } from "react-native";
 
 const getFirstChar = str => str.charAt(0).toUpperCase();
 
@@ -50,7 +48,7 @@ const UserThumbnail = props => {
   const bgIndex = Math.floor(text.charCodeAt(0) % alphabetColors.length);
   const bgColor = alphabetColors[bgIndex];
 
-  const thumbnail = (
+  return (
     <View
       style={[
         styles.wrapper,
@@ -61,7 +59,6 @@ const UserThumbnail = props => {
       <Text style={[styles.name, props.charStyles]}>{`${text}`}</Text>
     </View>
   );
-  return thumbnail;
 };
 
 UserThumbnail.propTypes = {
@@ -70,5 +67,21 @@ UserThumbnail.propTypes = {
   charStyles: PropTypes.object,
   to: PropTypes.string
 };
+
+const styles = StyleSheet.create({
+  wrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 50,
+    marginRight: 5,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  name: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#fff"
+  }
+});
 
 export default UserThumbnail;
