@@ -135,7 +135,6 @@ export class Editor extends React.Component {
     this.menIndex = menIndex;
     this.setState({
       keyword: "",
-      menIndex,
       isTrackingStarted: true,
     });
   }
@@ -494,7 +493,7 @@ export class Editor extends React.Component {
     if (!props.showEditor) return null;
 
     const baseInputProps = {
-      ref: input => (this.inputRef = input),
+      ref: input => props.onRef && props.onRef(input),
       style: [styles.input, customStyles.input],
       multiline: true,
       value: state.inputText,
@@ -514,7 +513,6 @@ export class Editor extends React.Component {
       // > 1 is used to ignore the trigger symbol.
       // The 'fetchingMentions || list.length > 0' is used to only show when there is content to avoid showing borders on empty content.
       show: this.shouldMentionsShow(state, props),
-      input: this.inputRef,
     };
 
     return (
