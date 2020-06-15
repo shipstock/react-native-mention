@@ -3,7 +3,7 @@
  * functions for our Editor
  */
 
-export const displayTextWithMentions = (inputText, formatMentionNode) => {
+export const displayTextWithMentions = (inputText, formatMentionNode, isTag) => {
   /**
    * Use this function to parse mentions markup @[name](id) in the string value.
    */
@@ -19,8 +19,7 @@ export const displayTextWithMentions = (inputText, formatMentionNode) => {
         lastIndex = men.end + 1;
         formattedText.push(initialStr);
         const formattedMention = formatMentionNode(
-          `@${men.name}`,
-          `${index}-${men.id}-${rowIndex}`,
+          `${men.name}`,
         );
         formattedText.push(formattedMention);
         if (mentions.length - 1 === index) {
@@ -166,7 +165,7 @@ export const EU = {
         let endIndexDiff = 0;
         mentions.forEach((men, index) => {
           newValue = newValue.concat(retLine.substring(lastIndex, men.start));
-          const name = `@${men.name}`;
+          const name = `${men.name}`;
           newValue = newValue.concat(name);
           const menEndIndex = men.start + (name.length - 1);
           map.set([men.start - endIndexDiff, menEndIndex - endIndexDiff], {
@@ -202,14 +201,13 @@ export const EU = {
      * @param val string to parse to find mentions
      * @returns list of found mentions
      */
-    let reg = /@\[([^\]]+?)\]\(id:([^\]]+?)\)/gim;
+    let reg = /(@|#)([^#@^\s-.]*)/gim;
     let indexes = [];
     while ((match = reg.exec(val))) {
       indexes.push({
-        start: match.MentionList,
+        start: match.index,
         end: reg.lastIndex - 1,
-        name: match[1],
-        id: match[2],
+        name: match[0],
         type: EU.specialTagsEnum.mention,
       });
     }
