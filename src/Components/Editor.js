@@ -46,7 +46,7 @@ export class Editor extends React.Component {
     onChangeKeyword: () => {},
     fetchingMentions: false,
     showEditor: true,
-    placeholder: "",
+    placeholder: "Type something, @mentions",
     trigger: "@" || '#',
     triggerLocation: 'anywhere',
   };
@@ -55,6 +55,7 @@ export class Editor extends React.Component {
     super(props);
 
     this.mentionsMap = new Map();
+    this.containerHeight = null;
     let msg = "";
     let formattedMsg = "";
     if (props.initialValue && props.initialValue !== "") {
@@ -70,7 +71,6 @@ export class Editor extends React.Component {
     this.state = {
       inputText: msg,
       formattedText: formattedMsg,
-      containerHeight: null,
       keyword: "",
       isTrackingStarted: false,
       selection: undefined,
@@ -344,242 +344,222 @@ export class Editor extends React.Component {
   };
 
   formatMentionNode = (txt, key) => (
-    <Text key={key} style={[styles.mention, this.props.customStyles.mention]}>
-{txt}
-</Text>
+    <Text key={key} style={styles.mention}>
+    {txt}
+    </Text>
 );
 
-formatText(inputText, isTag) {
-  /**
-   * Format the Mentions and display them with the different styles.
-   */
-  if (inputText === "" || !this.mentionsMap.size) return inputText;
-  const formattedText = [];
-  let lastIndex = 0;
-  this.mentionsMap.forEach((men, [start, end]) => {
-    const initialStr =
-      start === 1 ? "" : inputText.substring(lastIndex, start);
-    lastIndex = end + 1;
-    formattedText.push(initialStr);
-    const formattedMention = this.formatMentionNode(
-      `${men.name}`,
-      `${start}-${men.id}-${end}`,
-    );
-    formattedText.push(formattedMention);
-    if (
-      EU.isKeysAreSame(EU.getLastKeyInMap(this.mentionsMap), [start, end])
-    ) {
-      const lastStr = inputText.substr(lastIndex); //remaining string
-      formattedText.push(lastStr);
-    }
-  });
-  return formattedText;
-}
-
-formatTextWithMentions(inputText) {
-  if (inputText === "" || !this.mentionsMap.size) return inputText;
-  let formattedText = "";
-  let lastIndex = 0;
-  this.mentionsMap.forEach((men, [start, end]) => {
-    const initialStr =
-      start === 1 ? "" : inputText.substring(lastIndex, start);
-    lastIndex = end + 1;
-    formattedText = formattedText.concat(initialStr);
-    formattedText = formattedText.concat(`@[${men.name}](id:${men.id})`);
-    if (
-      EU.isKeysAreSame(EU.getLastKeyInMap(this.mentionsMap), [start, end])
-    ) {
-      const lastStr = inputText.substr(lastIndex); //remaining string
-      formattedText = formattedText.concat(lastStr);
-    }
-  });
-  return formattedText;
-}
-
-sendMessageToFooter(text) {
-  this.props.onChange({
-    displayText: text,
-    text: this.formatTextWithMentions(text),
-  });
-}
-
-onChange = (inputText, fromAtBtn) => {
-  let text = inputText;
-  const prevText = this.state.inputText;
-  let selection = this.selection;
-  // FIXME: Workaround for inconsistent event firing (iOS/Android) causing a selection delay for Android (https://github.com/facebook/react-native/issues/18221).
-  if (Platform.OS === "android") {
-    selection =
-      inputText.length > prevText.length
-        ? { start: selection.start + 1, end: selection.end + 1 }
-        : { start: selection.start - 1, end: selection.end - 1 };
-  }
-
-  if (fromAtBtn) {
-    // Update selection but don't set in state it will be auto set by input.
-    selection.start = selection.start + 1;
-    selection.end = selection.end + 1;
-  }
-  if (text.length < prevText.length) {
+  formatText(inputText, isTag) {
     /**
-     * If user is back pressing and it deletes the mention remove it from string.
+     * Format the Mentions and display them with the different styles.
      */
-    let charDeleted = Math.abs(text.length - prevText.length);
-    const totalSelection = {
-      start: selection.start,
-      end: charDeleted > 1 ? selection.start + charDeleted : selection.start,
-    };
-    /**
-     * Remove all the selected mentions
-     */
-      // Multi-char delete.
-    const mentionKeys = EU.getSelectedMentionKeys(
-      this.mentionsMap,
-      totalSelection,
+    if (inputText === "" || !this.mentionsMap.size) return inputText;
+    const formattedText = [];
+    let lastIndex = 0;
+    this.mentionsMap.forEach((men, [start, end]) => {
+      const initialStr =
+        start === 1 ? "" : inputText.substring(lastIndex, start);
+      lastIndex = end + 1;
+      formattedText.push(initialStr);
+      const formattedMention = this.formatMentionNode(
+        `${men.name}`,
+        `${start}-${men.id}-${end}`,
       );
-    mentionKeys.forEach(key => {
-      this.mentionsMap.delete(key);
+      formattedText.push(formattedMention);
+      if (
+        EU.isKeysAreSame(EU.getLastKeyInMap(this.mentionsMap), [start, end])
+      ) {
+        const lastStr = inputText.substr(lastIndex); //remaining string
+        formattedText.push(lastStr);
+      }
     });
-    /**
-     * Update indexes on char remove no need to worry about totalSelection End.
-     * We already removed deleted mentions from the actual string.
-     */
-    this.updateMentionsMap(
-      {
-        start: selection.end,
-        end: prevText.length,
-      },
-      charDeleted,
-      false,
-    );
-  } else {
-    //update indexes on new character add
+    return formattedText;
+  }
 
-    let charAdded = Math.abs(text.length - prevText.length);
-    this.updateMentionsMap(
-      {
-        start: selection.end,
-        end: text.length,
-      },
-      charAdded,
-      true,
-    );
-    /**
-     * if user type anything on the mention
-     * remove the mention from the mentions array
-     * */
-    if (selection.start === selection.end) {
-      const key = EU.findMentionKeyInMap(
+  formatTextWithMentions(inputText) {
+    if (inputText === "" || !this.mentionsMap.size) return inputText;
+    let formattedText = "";
+    let lastIndex = 0;
+    this.mentionsMap.forEach((men, [start, end]) => {
+      const initialStr =
+        start === 1 ? "" : inputText.substring(lastIndex, start);
+      lastIndex = end + 1;
+      formattedText = formattedText.concat(initialStr);
+      formattedText = formattedText.concat(`@[${men.name}](id:${men.id})`);
+      if (
+        EU.isKeysAreSame(EU.getLastKeyInMap(this.mentionsMap), [start, end])
+      ) {
+        const lastStr = inputText.substr(lastIndex); //remaining string
+        formattedText = formattedText.concat(lastStr);
+      }
+    });
+    return formattedText;
+  }
+
+  sendMessageToFooter(text) {
+    this.props.onChange({
+      displayText: text,
+      text: this.formatTextWithMentions(text),
+    });
+  }
+
+  onChange = (inputText, fromAtBtn) => {
+    let text = inputText;
+    const prevText = this.state.inputText;
+    let selection = this.selection;
+    // FIXME: Workaround for inconsistent event firing (iOS/Android) causing a selection delay for Android (https://github.com/facebook/react-native/issues/18221).
+    if (Platform.OS === "android") {
+      selection =
+        inputText.length > prevText.length
+          ? { start: selection.start + 1, end: selection.end + 1 }
+          : { start: selection.start - 1, end: selection.end - 1 };
+    }
+
+    if (fromAtBtn) {
+      // Update selection but don't set in state it will be auto set by input.
+      selection.start = selection.start + 1;
+      selection.end = selection.end + 1;
+    }
+    if (text.length < prevText.length) {
+      /**
+       * If user is back pressing and it deletes the mention remove it from string.
+       */
+      let charDeleted = Math.abs(text.length - prevText.length);
+      const totalSelection = {
+        start: selection.start,
+        end: charDeleted > 1 ? selection.start + charDeleted : selection.start,
+      };
+      /**
+       * Remove all the selected mentions
+       */
+        // Multi-char delete.
+      const mentionKeys = EU.getSelectedMentionKeys(
         this.mentionsMap,
-        selection.start - 1,
-      );
-      if (key && key.length) {
+        totalSelection,
+        );
+      mentionKeys.forEach(key => {
         this.mentionsMap.delete(key);
+      });
+      /**
+       * Update indexes on char remove no need to worry about totalSelection End.
+       * We already removed deleted mentions from the actual string.
+       */
+      this.updateMentionsMap(
+        {
+          start: selection.end,
+          end: prevText.length,
+        },
+        charDeleted,
+        false,
+      );
+    } else {
+      //update indexes on new character add
+
+      let charAdded = Math.abs(text.length - prevText.length);
+      this.updateMentionsMap(
+        {
+          start: selection.end,
+          end: text.length,
+        },
+        charAdded,
+        true,
+      );
+      /**
+       * if user type anything on the mention
+       * remove the mention from the mentions array
+       * */
+      if (selection.start === selection.end) {
+        const key = EU.findMentionKeyInMap(
+          this.mentionsMap,
+          selection.start - 1,
+        );
+        if (key && key.length) {
+          this.mentionsMap.delete(key);
+        }
       }
     }
-  }
 
-  this.setState({
-    inputText: text,
-    formattedText: this.formatText(text),
-  });
-  this.checkForMention(text, selection);
+    this.setState({
+      inputText: text,
+      formattedText: this.formatText(text),
+    });
+    this.checkForMention(text, selection);
 
-  this.sendMessageToFooter(text);
-};
-
-shouldMentionsShow = (state, props) => {
-  // length > 1 is used to ignore the trigger symbol.
-  // The 'fetchingMentions || list.length > 0' is used to only show mentions when there is content to avoid showing borders on empty content.
-  return (
-    state.isTrackingStarted &&
-    (props.fetchingMentions || props.list.length > 0)
-  );
-};
-
-
-render() {
-  const { props, state } = this;
-  const { customStyles, fetchingMentions, list, CustomMentionsList } = props;
-
-  if (!props.showEditor) return null;
-
-  const baseInputProps = {
-    ref: input => props.onRef && props.onRef(input),
-    style: [styles.input, customStyles.input],
-    multiline: true,
-    scrollEnabled: true,
-    value: state.inputText,
-    onBlur: props.toggleEditor,
-    onChangeText: this.onChange,
-    onSelectionChange: this.handleSelectionChange,
+    this.sendMessageToFooter(text);
   };
 
-  const styles1 = {...customStyles, messageList: props.isBottom
-      && { top: state.containerHeight}
-      ||  props.isOnTop
-      && {bottom: state.containerHeight} || {...customStyles.messageList}}
-
-  const mentionListProps = {
-    customStyles: styles1,
-    fetching: fetchingMentions,
-    horizontal: props.horizontal,
-    keyword: state.keyword,
-    list: list,
-    onSuggestionTap: this.onSuggestionTap,
-    renderMention: props.renderMention,
-    show: this.shouldMentionsShow(state, props),
+  shouldMentionsShow = (state, props) => {
+    // length > 1 is used to ignore the trigger symbol.
+    // The 'fetchingMentions || list.length > 0' is used to only show mentions when there is content to avoid showing borders on empty content.
+    return (
+      state.isTrackingStarted &&
+      (props.fetchingMentions || props.list.length > 0)
+    );
   };
 
-  return (
-    <View onLayout={(event) => {
-    var {height} = event.nativeEvent.layout;
-    this.setState({containerHeight: height})
-  }} style={customStyles.container}>
-    <ScrollView
-  contentContainerStyle={{minHeight: 35, justifyContent: 'center'}}
-  showsVerticalScrollIndicator={false}
-    >
-    <View style={[styles.inputRow, customStyles.inputRow]}>
-  {this.props.renderLeftView()}
-<View style={customStyles.inputContainer}>
-    <View
-    // Extra view here to put input & its mask on same spacing!
-    >
-    <View style={styles.formattedTextWrapper}>
-    <Text
-  style={[styles.formattedText, customStyles.inputMaskText]}
->
-  {state.formattedText}
-</Text>
-  </View>
-  {Platform.OS === "ios" ? (
-    <TextInput
-    {...this.props}
-    {...baseInputProps}
-    scrollEnabled={false}
-    selection={this.state.selection}
-    />
-  ) : (
+
+  render() {
+    const { props, state } = this;
+    const { customStyles, fetchingMentions, list, CustomMentionsList } = props;
+
+    if (!props.showEditor) return null;
+
+    const baseInputProps = {
+      ref: input => props.onRef && props.onRef(input),
+      style: [styles.input, customStyles.input],
+      multiline: true,
+      scrollEnabled: true,
+      // value: state.inputText,
+      onBlur: props.toggleEditor,
+      onChangeText: this.onChange,
+      onSelectionChange: this.handleSelectionChange,
+    };
+
+    const inputStyles = {...customStyles, messageList: props.isBottom
+        && {...customStyles.messageList, ios: {top: this.containerHeight}}
+        ||  props.isOnTop
+        && {...customStyles.messageList, ios: {bottom: this.containerHeight}} || {...customStyles.messageList}}
+
+    const mentionListProps = {
+      customStyles: inputStyles,
+      isSuggestionListAbsolutePositioned: props.isSuggestionListAbsolutePositioned,
+      fetching: fetchingMentions,
+      horizontal: props.horizontal,
+      keyword: state.keyword,
+      list: list,
+      onSuggestionTap: this.onSuggestionTap,
+      renderMention: props.renderMention,
+      show: this.shouldMentionsShow(state, props),
+    };
+
+    return (
+      <View
+    style={[customStyles.container, Platform.OS !== 'ios' && props.isBottom && styles.isReversed]}>
+    {this.shouldMentionsShow(state, props) &&  (
+      CustomMentionsList ? <CustomMentionsList
+      mentionListProps={mentionListProps} /> :  <MentionList {...mentionListProps} />
+    )}
+  <View style={[styles.inputRow, customStyles.inputRow]}>
   <TextInput
     {...this.props}
     {...baseInputProps}
-    // ref={(ref) => this.inputRefs = ref}
-    // FIXME: Add support for 'selection' on Android (quickly selecting & deselection mention when selecting more or less).
-    />
-  )}
-</View>
-  </View>
-  {this.props.renderRightView()}
-</View>
-  </ScrollView>
-  {this.shouldMentionsShow(state, props) &&  (
-    CustomMentionsList ? <CustomMentionsList
-    mentionListProps={mentionListProps} /> :  <MentionList {...mentionListProps} />
-  )}
-</View>
-);
-}
+    onLayout={(event) => {
+      const {height} = event.nativeEvent.layout;
+      this.containerHeight = height
+    }}
+    scrollEnabled={true}
+    selection={Platform.OS === 'ios' ? this.state.selection : null}
+      >
+      <Text
+    style={[styles.formattedText, customStyles.inputMaskText]}
+  >
+    {state.formattedText}
+  </Text>
+    </TextInput>
+    </View>
+    </View>
+  );
+  }
 }
 
 const styles = StyleSheet.create({
@@ -592,17 +572,14 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     // Padding to look decent with multiple lines
-    paddingTop: 4,
-    paddingBottom: 4,
+  },
+  isReversed: {
+    display:'flex',
+    flexDirection: 'column-reverse',
   },
   formattedTextWrapper: {
-    justifyContent: "center",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingVertical: 4,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   formattedText: {
     color: Colors.MATERIAL_PRIMARY_TEXT,
