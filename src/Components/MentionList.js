@@ -64,7 +64,7 @@ export class MentionList extends React.PureComponent {
     // If wanting to show and it has content (avoids borders showing before list has content).
     if (show) {
       content = (
-        <View style={[listStyle, this.props.customStyles.mentionsListContainer]}>
+        <View style={[listStyle]}>
           <FlatList
             keyboardShouldPersistTaps={"always"}
             horizontal={props.horizontal}
@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
   suggestionsPanelStyleAndroid: {
     backgroundColor: Colors.ANDROID_MENTION_LIST_BACKGROUND,
     borderBottomWidth: 1,
+    maxHeight: 300,
     borderColor: Colors.MATERIAL_DIVIDER,
   },
   loaderContainer: {
