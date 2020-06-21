@@ -534,28 +534,28 @@ export class Editor extends React.Component {
 
     return (
       <View
-    style={[customStyles.container, Platform.OS !== 'ios' && props.isBottom && styles.isReversed]}>
-    {this.shouldMentionsShow(state, props) &&  (
-      CustomMentionsList ? <CustomMentionsList
-      mentionListProps={mentionListProps} /> :  <MentionList {...mentionListProps} />
-    )}
-  <View style={[styles.inputRow, customStyles.inputRow]}>
-  <TextInput
-    {...this.props}
-    {...baseInputProps}
-    onLayout={(event) => {
-      const {height} = event.nativeEvent.layout;
-      this.containerHeight = height
-    }}
-    scrollEnabled={true}
-    selection={Platform.OS === 'ios' ? this.state.selection : null}
+        style={[customStyles.container, Platform.OS !== 'ios' && props.isBottom && styles.isReversed]}>
+      {this.shouldMentionsShow(state, props) &&  (
+          CustomMentionsList ? <CustomMentionsList
+        mentionListProps={mentionListProps} /> :  <MentionList {...mentionListProps} />
+  )}
+      <View style={[styles.inputRow, customStyles.inputRow]}>
+      <TextInput
+      {...this.props}
+      {...baseInputProps}
+      onLayout={(event) => {
+        const {height} = event.nativeEvent.layout;
+        this.containerHeight = height
+      }}
+      scrollEnabled={true}
+      selection={Platform.OS === 'ios' ? this.state.selection : null}
       >
-      <Text
-    style={[styles.formattedText, customStyles.inputMaskText]}
-  >
-    {state.formattedText}
-  </Text>
-    </TextInput>
+        <Text
+          style={[styles.formattedText, customStyles.inputMaskText]}
+        >
+          {state.formattedText}
+        </Text>
+      </TextInput>
     </View>
     </View>
   );
