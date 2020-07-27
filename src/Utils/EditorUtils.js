@@ -18,8 +18,11 @@ export const displayTextWithMentions = (inputText, formatMentionNode, isTag) => 
         const initialStr = retLine.substring(lastIndex, men.start);
         lastIndex = men.end + 1;
         formattedText.push(initialStr);
+        const regex = new RegExp()
         const formattedMention = formatMentionNode(
           `${men.name}`,
+          men.isLink,
+          men.isTag,
         );
         formattedText.push(formattedMention);
         if (mentions.length - 1 === index) {
@@ -201,13 +204,16 @@ export const EU = {
      * @param val string to parse to find mentions
      * @returns list of found mentions
      */
-    let reg = /(@|#)([^#@^\s-.]*)/gim;
+    const newRegEx = new RegExp(/(?:(?:(https?|ftp|file):\/\/|www\.|ftp\.)|([\w\-_]+(?:\.|\s*\[dot\]\s*[A-Z\-_]+)+))([A-Z\-\.,@?^=%&amp;:\/~\+#]*[A-Z\-\@?^=%&amp;\/~\+#]){2,6}?/gim);
+    let reg = /(@|#)([^#@^\s-.]*)|(?:(?:(https?|ftp|file):\/\/|www\.|ftp\.)|([\w\-_]+(?:\.|\s*\[dot\]\s*[A-Z\-_]+)+))([A-Z\-\.,@?^=%&amp;:\/~\+#]*[A-Z\-\@?^=%&amp;\/~\+#]){2,6}?/gim;
     let indexes = [];
     while ((match = reg.exec(val))) {
       indexes.push({
         start: match.index,
         end: reg.lastIndex - 1,
         name: match[0],
+        isTag: match[0][0] === '#',
+        isLink: match[0].match(newRegEx),
         type: EU.specialTagsEnum.mention,
       });
     }
